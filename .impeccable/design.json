@@ -1,0 +1,401 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-12T00:00:00Z",
+  "title": "Design System: Baytak",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "primary",
+        "displayName": "Carbon Ink",
+        "canonical": "#1F2A7A",
+        "tonalRamp": [
+          "#141A44",
+          "#18205F",
+          "#1F2A7A",
+          "#4B5273",
+          "#AEB6D2",
+          "#CBD2EE",
+          "#DDE2F5",
+          "#EEF0FA"
+        ]
+      },
+      "ink-deep": {
+        "role": "primary",
+        "displayName": "Deep Ink",
+        "canonical": "#141A44",
+        "tonalRamp": [
+          "#141A44",
+          "#18205F",
+          "#1F2A7A",
+          "#4B5273",
+          "#AEB6D2",
+          "#CBD2EE",
+          "#DDE2F5",
+          "#EEF0FA"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Carbon Paper",
+        "canonical": "#EDF0F7",
+        "tonalRamp": [
+          "#666C8A",
+          "#AEB6D2",
+          "#D3D9EA",
+          "#E3E7F2",
+          "#EDF0F7",
+          "#F2F4FA",
+          "#F8F9FC",
+          "#FFFFFF"
+        ]
+      },
+      "slip": {
+        "role": "neutral",
+        "displayName": "White Slip",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#666C8A",
+          "#AEB6D2",
+          "#D3D9EA",
+          "#E3E7F2",
+          "#EDF0F7",
+          "#F2F4FA",
+          "#F8F9FC",
+          "#FFFFFF"
+        ]
+      },
+      "verdigris": {
+        "role": "secondary",
+        "displayName": "Verdigris (Paid)",
+        "canonical": "#0B6B4D",
+        "tonalRamp": [
+          "#0B6B4D",
+          "#2F8568",
+          "#5AA38A",
+          "#86BFAB",
+          "#B0D8C9",
+          "#DDF1E8",
+          "#EAF6F0",
+          "#F5FBF8"
+        ]
+      },
+      "vermilion": {
+        "role": "secondary",
+        "displayName": "Vermilion (Unpaid)",
+        "canonical": "#B3321B",
+        "tonalRamp": [
+          "#B3321B",
+          "#C45440",
+          "#D07666",
+          "#DD9A8C",
+          "#EBBDB2",
+          "#F6D0C6",
+          "#FBE3DC",
+          "#FDF2EE"
+        ]
+      },
+      "amber": {
+        "role": "secondary",
+        "displayName": "Amber (Pending)",
+        "canonical": "#8A5A00",
+        "tonalRamp": [
+          "#8A5A00",
+          "#A67420",
+          "#C09040",
+          "#D6AE6A",
+          "#E8CC95",
+          "#F4E1B5",
+          "#FBEFD0",
+          "#FDF7E8"
+        ]
+      },
+      "brass": {
+        "role": "tertiary",
+        "displayName": "Engraved Brass",
+        "canonical": "#B8913F",
+        "tonalRamp": [
+          "#7A5F28",
+          "#94742F",
+          "#B8913F",
+          "#C7A65F",
+          "#D4BA82",
+          "#E1CFA5",
+          "#EEE3C8",
+          "#F7F1E4"
+        ]
+      },
+      "vermilion-deep": {
+        "role": "secondary",
+        "displayName": "Deep Vermilion",
+        "canonical": "#8F2815",
+        "tonalRamp": [
+          "#5C1A0E",
+          "#8F2815",
+          "#B3321B",
+          "#C45440",
+          "#D07666",
+          "#DD9A8C",
+          "#F6D0C6",
+          "#FBE3DC"
+        ]
+      },
+      "border-input": {
+        "role": "neutral",
+        "displayName": "Input Edge",
+        "canonical": "#7A81A3",
+        "tonalRamp": [
+          "#4B5273",
+          "#666C8A",
+          "#7A81A3",
+          "#AEB6D2",
+          "#D3D9EA",
+          "#E3E7F2",
+          "#EDF0F7",
+          "#FFFFFF"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Big figures: the Home Verdict amount, large door plate."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Screen-level titles."
+      },
+      "heading": {
+        "displayName": "Heading",
+        "purpose": "Navigation header and sheet titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default reading text and field input."
+      },
+      "body-strong": {
+        "displayName": "Body Strong",
+        "purpose": "Button labels, toast text, emphasized values."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Helper, error and secondary lines."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Badges, tab labels."
+      },
+      "numeral": {
+        "displayName": "Numeral",
+        "purpose": "Overlay for money and door numbers: bold, tabular digits."
+      }
+    },
+    "shadows": [
+      {
+        "name": "slip",
+        "value": "iOS: 0 2px 5px rgba(20,26,68,0.08); Android: elevation 2",
+        "purpose": "Cards."
+      },
+      {
+        "name": "lifted",
+        "value": "iOS: 0 6px 12px rgba(20,26,68,0.16); Android: elevation 6",
+        "purpose": "Toasts only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "stamp-settle",
+        "value": "opacity 0->1 120ms ease-out-exp; scale 1.45->1 spring friction 6 tension 220; skipped under Reduce Motion",
+        "purpose": "Payment state turning Paid. The one authored moment."
+      },
+      {
+        "name": "toast-in",
+        "value": "220ms ease-out-cubic, translateY -24 to 0 with fade",
+        "purpose": "Toast entrance."
+      },
+      {
+        "name": "toast-out",
+        "value": "180ms ease-in-quad",
+        "purpose": "Toast exit."
+      },
+      {
+        "name": "press",
+        "value": "opacity 0.85, scale 0.99",
+        "purpose": "Pressable card feedback."
+      },
+      {
+        "name": "sheet-in",
+        "value": "280ms ease-out-exp, translateY from 60% of window height to 0 with backdrop fade; 0ms under Reduce Motion",
+        "purpose": "Sheet rises from the bottom."
+      },
+      {
+        "name": "sheet-out",
+        "value": "180ms ease-in-quad; drag past 80px or a flick dismisses, otherwise springs back",
+        "purpose": "Sheet leaves, or is dragged away by the handle."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main action. Ink fill, 52px, 8px radius.",
+      "html": "<button class=\"ds-btn-primary\">Send reminder</button>",
+      "css": ".ds-btn-primary { background: #1F2A7A; color: #fff; border: 1px solid #1F2A7A; border-radius: 8px; min-height: 52px; padding: 0 16px; font: 600 16px/23px 'IBM Plex Sans Arabic', sans-serif; cursor: pointer; } .ds-btn-primary:hover, .ds-btn-primary:active { background: #18205F; } .ds-btn-primary:focus-visible { outline: 2px solid #1F2A7A; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Supporting action, ink-soft fill.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary { background: #DDE2F5; color: #141A44; border: 1px solid #DDE2F5; border-radius: 8px; min-height: 52px; padding: 0 16px; font: 600 16px/23px 'IBM Plex Sans Arabic', sans-serif; cursor: pointer; } .ds-btn-secondary:hover, .ds-btn-secondary:active { background: #CBD2EE; } .ds-btn-secondary:focus-visible { outline: 2px solid #1F2A7A; outline-offset: 2px; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive action, vermilion on wash.",
+      "html": "<button class=\"ds-btn-danger\">Remove</button>",
+      "css": ".ds-btn-danger { background: #FBE3DC; color: #B3321B; border: 1px solid #FBE3DC; border-radius: 8px; min-height: 52px; padding: 0 16px; font: 600 16px/23px 'IBM Plex Sans Arabic', sans-serif; cursor: pointer; } .ds-btn-danger:hover, .ds-btn-danger:active { background: #F6D0C6; } .ds-btn-danger:focus-visible { outline: 2px solid #B3321B; outline-offset: 2px; }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "Destructive confirm (ConfirmDialog): solid vermilion, white label.",
+      "html": "<button class=\"ds-btn-destructive\">Delete</button>",
+      "css": ".ds-btn-destructive { background: #B3321B; color: #fff; border: 1px solid #B3321B; border-radius: 8px; min-height: 52px; padding: 0 16px; font: 600 16px/23px 'IBM Plex Sans Arabic', sans-serif; cursor: pointer; } .ds-btn-destructive:hover, .ds-btn-destructive:active { background: #8F2815; } .ds-btn-destructive:focus-visible { outline: 2px solid #B3321B; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "text-field",
+      "description": "White box, 1.5px input-edge border that turns ink on focus. Label is sentence-case body-strong.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Apartment</span><input class=\"ds-field-input\" value=\"3B\"></label>",
+      "css": ".ds-field { display: block; } .ds-field-label { display: block; margin-bottom: 6px; font: 600 16px/23px 'IBM Plex Sans Arabic', sans-serif; color: #4B5273; } .ds-field-input { box-sizing: border-box; width: 100%; min-height: 52px; padding: 12px 14px; background: #fff; border: 1.5px solid #7A81A3; border-radius: 8px; font: 400 16px/23px 'IBM Plex Sans Arabic', sans-serif; color: #141A44; } .ds-field-input:focus, .ds-field-input:focus-visible { outline: none; border-color: #1F2A7A; }"
+    },
+    {
+      "name": "Card (Slip)",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "White slip, radius 10, small ink-tinted shadow.",
+      "html": "<div class=\"ds-card\">Unit 3B - July charges</div>",
+      "css": ".ds-card { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 2px 5px rgba(20,26,68,0.08); color: #141A44; font: 400 16px/23px 'IBM Plex Sans Arabic', sans-serif; }"
+    },
+    {
+      "name": "Stamp Paid",
+      "kind": "custom",
+      "refersTo": "stamp-paid",
+      "description": "Payment status as an angled stamp: icon plus word, verdigris.",
+      "html": "<span class=\"ds-stamp ds-stamp-paid\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 13l5 5L18 7\"/><path d=\"M12 15l3 3L23 7\"/></svg>PAID</span>",
+      "css": ".ds-stamp { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 2px solid; border-radius: 4px; font: 700 13px/16px 'IBM Plex Sans Arabic', sans-serif; letter-spacing: 1px; transform: rotate(-3deg); } .ds-stamp-paid { color: #0B6B4D; border-color: #0B6B4D; background: #DDF1E8; }"
+    },
+    {
+      "name": "Stamp Unpaid",
+      "kind": "custom",
+      "refersTo": "stamp-unpaid",
+      "description": "Payment status as an angled stamp: icon plus word, vermilion.",
+      "html": "<span class=\"ds-stamp2\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\"><circle cx=\"12\" cy=\"12\" r=\"9\"/></svg>UNPAID</span>",
+      "css": ".ds-stamp2 { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 2px solid #B3321B; border-radius: 4px; background: #FBE3DC; color: #B3321B; font: 700 13px/16px 'IBM Plex Sans Arabic', sans-serif; letter-spacing: 1px; transform: rotate(-3deg); }"
+    },
+    {
+      "name": "Door Plate (ink)",
+      "kind": "custom",
+      "refersTo": "door-plate-ink",
+      "description": "Apartment number on an enamel plate with a brass rim; sizes are minimums and grow with text.",
+      "html": "<div class=\"ds-plate\"><span class=\"ds-plate-rim\"></span>3B</div>",
+      "css": ".ds-plate { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 64px; min-height: 48px; padding: 4px 10px; background: #1F2A7A; border: 1.5px solid #141A44; border-radius: 8px; color: #F4F6FF; font: 700 24px/30px 'IBM Plex Sans Arabic', sans-serif; font-variant-numeric: tabular-nums; } .ds-plate-rim { position: absolute; inset: 3px; border: 1px solid #B8913F; border-radius: 4px; pointer-events: none; }"
+    },
+    {
+      "name": "Tab Bar",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Bottom tabs: white bar, hairline top, ink active tint.",
+      "html": "<nav class=\"ds-tabs\"><a class=\"ds-tab ds-tab-on\">Home</a><a class=\"ds-tab\">Collect</a><a class=\"ds-tab\">Manage</a><a class=\"ds-tab\">Account</a></nav>",
+      "css": ".ds-tabs { display: flex; background: #fff; border-top: 1px solid #D3D9EA; } .ds-tab { flex: 1; padding: 12px 0; text-align: center; font: 600 12px/16px 'IBM Plex Sans Arabic', sans-serif; color: #666C8A; cursor: pointer; } .ds-tab-on { color: #1F2A7A; } .ds-tab:focus-visible { outline: 2px solid #1F2A7A; }"
+    },
+    {
+      "name": "Segmented",
+      "kind": "chip",
+      "refersTo": "segmented-selected",
+      "description": "Single choice; selected segment is solid ink with light text.",
+      "html": "<div class=\"ds-seg\"><span class=\"ds-seg-on\">USD</span><span>LBP</span></div>",
+      "css": ".ds-seg { display: inline-flex; gap: 4px; padding: 4px; background: #E3E7F2; border-radius: 8px; } .ds-seg span { min-width: 72px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; color: #4B5273; font: 600 16px/23px 'IBM Plex Sans Arabic', sans-serif; } .ds-seg .ds-seg-on { background: #1F2A7A; color: #fff; }"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "refersTo": "badge-success",
+      "description": "Small square stamp-style tag, not a pill.",
+      "html": "<span class=\"ds-badge\">Approved</span>",
+      "css": ".ds-badge { display: inline-block; padding: 3px 8px; background: #DDF1E8; color: #0B6B4D; border: 1.5px solid #0B6B4D; border-radius: 4px; font: 600 12px/16px 'IBM Plex Sans Arabic', sans-serif; letter-spacing: 0.4px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Building's Receipt Book",
+    "overview": "Baytak records rent and building charges between a resident and the person who runs the building. The world it borrows is the paper receipt book: carbon-copy ink blue for the shell, cool paper for the ground, white slips for content, and rubber stamps for state. Payment status is the one authored moment. Layout, navigation and controls stay platform-standard so the world lends type, palette, density and the stamp. One shared look for iOS and Android, calm operational density, small crisp corners, light mode only. The whole app now sits in this world. Recorded from source only; finish review dispositions were recapture then fix (applied); device captures are owed.",
+    "keyCharacteristics": [
+      "Ink blue carries the shell, primary buttons and door plates; text is tinted from the ink, never neutral gray.",
+      "Two stamp inks do the state jobs: verdigris is Paid, vermilion is Unpaid. State is always word plus icon, never colour alone.",
+      "One family (IBM Plex Sans Arabic), Latin and Arabic, with fixed-width digits for money and numbers.",
+      "Flat slips with a faint shadow; depth otherwise from paper-on-paper tone.",
+      "Light mode only."
+    ],
+    "rules": [
+      {
+        "name": "The Two Inks Rule",
+        "body": "Verdigris means Paid and vermilion means Unpaid, everywhere, and neither is used for decoration. Amber means Pending.",
+        "section": "colors"
+      },
+      {
+        "name": "The Words Beside Colour Rule",
+        "body": "A state colour never stands alone: it travels with the word (Paid, Unpaid) and an icon.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ink-Tinted Text Rule",
+        "body": "Text colours come from the ink hue (text, text-muted, text-faint); no neutral gray text.",
+        "section": "colors"
+      },
+      {
+        "name": "The Numerals Rule",
+        "body": "Money and apartment numbers use the numeral treatment (heaviest weight, tabular digits).",
+        "section": "typography"
+      },
+      {
+        "name": "The Capped Scale Rule",
+        "body": "All text honours system font scaling up to MAX_FONT_SCALE = 1.6 and no further, via maxFontSizeMultiplier in the shared Text and TextField.",
+        "section": "typography"
+      },
+      {
+        "name": "The Slip Rule",
+        "body": "Content sits on white slips with at most the small shadow; only transient layers (toast) take the lifted one.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Money Is Not a Stamp Rule",
+        "body": "Income and expense (Wallet) are not set in verdigris or vermilion; the Wallet balance sits on a calm white card. The stamp inks stay reserved for state.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Do take every colour, space, radius and type role from theme.ts; add a token before adding a literal.",
+      "Do show payment state as a Stamp (word plus icon) and apartment numbers as a DoorPlate.",
+      "Do keep targets at least HIT (48px Android, 44px elsewhere) and primary controls at 52px.",
+      "Do use border-input for field and checkbox borders, and start/end (never left/right) in styles.",
+      "Do gate any new motion on Reduce Motion, as Stamp does.",
+      "Do use the Text component so the 1.6 font-scale cap applies.",
+      "Do use Ionicons through the shared components, with an accessibility label on icon-only controls."
+    ],
+    "donts": [
+      "Don't use verdigris or vermilion for anything but Paid/Success and Unpaid/Error.",
+      "Don't signal state by colour alone.",
+      "Don't use neutral gray text, pill-shaped buttons or badges, or large radii; the world is small crisp corners.",
+      "Don't set money direction (income, expense) in the stamp inks.",
+      "Don't use brass for text; it is a decorative rim.",
+      "Don't invent a custom navigation or control pattern where the platform has one."
+    ]
+  }
+}

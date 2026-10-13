@@ -1,0 +1,31 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "AZURE_FUNCTIONS_ENVIRONMENT": "Development",
+
+    "Database__Provider": "Sqlite",
+    "ConnectionStrings__Baytak": "Data Source=baytak.dev.db",
+
+    "Jwt__Key": "dev-only-secret-change-me-0123456789abcdef",
+    "Jwt__Issuer": "baytak",
+    "Jwt__Audience": "baytak-app",
+    "Jwt__ExpiryDays": "30",
+
+    "Phone__DefaultCountryCode": "+961",
+
+    "Sms__Provider": "Log",
+    "Sms__AllowedCountryCodes": "961",
+    "Sms__Twilio__AccountSid": "",
+    "Sms__Twilio__AuthToken": "",
+    "Sms__Twilio__From": "",
+    "Sms__Twilio__MessagingServiceSid": "",
+
+    "Otp__FixedCode": "",
+    "Otp__FixedCodePhones": "",
+
+    "Push__Enabled": "true",
+    "Push__AccessToken": ""
+  }
+}
