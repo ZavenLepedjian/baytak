@@ -1,34 +1,34 @@
 ---
 name: Baytak
-description: A building's receipt book, kept on a phone. Carbon-copy ink blue, paper, and two stamp inks for Paid and Unpaid.
+description: A building's receipt book, kept on a phone. The logo's teal, paper, and two stamp inks for Paid and Unpaid.
 colors:
-  ink: "#1F2A7A"
-  ink-dark: "#18205F"
-  ink-deep: "#141A44"
-  ink-soft: "#DDE2F5"
-  ink-tint: "#EEF0FA"
-  paper: "#EDF0F7"
+  ink: "#00847C"
+  ink-dark: "#006B65"
+  ink-deep: "#05302E"
+  ink-soft: "#D3EFEC"
+  ink-tint: "#EAF6F5"
+  paper: "#EEF4F3"
   slip: "#FFFFFF"
-  paper-muted: "#E3E7F2"
-  rule: "#D3D9EA"
-  rule-strong: "#AEB6D2"
-  border-input: "#7A81A3"
-  text: "#141A44"
-  text-muted: "#4B5273"
-  text-faint: "#666C8A"
-  verdigris: "#0B6B4D"
-  verdigris-wash: "#DDF1E8"
+  paper-muted: "#E1EAE9"
+  rule: "#D0DDDC"
+  rule-strong: "#A9BDBB"
+  border-input: "#6F8583"
+  text: "#0B2625"
+  text-muted: "#3F5654"
+  text-faint: "#5B706E"
+  verdigris: "#2E6B1F"
+  verdigris-wash: "#E3F1DB"
   vermilion: "#B3321B"
   vermilion-deep: "#8F2815"
   vermilion-wash: "#FBE3DC"
   amber: "#8A5A00"
   amber-wash: "#FBEFD0"
   brass: "#B8913F"
-  plate-text: "#F4F6FF"
+  plate-text: "#F2FBFA"
   on-ink: "#FFFFFF"
   on-ink-muted: "rgba(255,255,255,0.85)"
   on-ink-wash: "rgba(255,255,255,0.18)"
-  pressed-soft: "#CBD2EE"
+  pressed-soft: "#BFE3DF"
   pressed-danger: "#F6D0C6"
 typography:
   display:
@@ -170,26 +170,26 @@ Status: recorded from source only. No simulator, emulator or screenshots were av
 
 **Creative North Star: "The Building's Receipt Book"**
 
-Baytak records rent and building charges between a resident and the person who runs the building. The world it borrows is the paper receipt book: carbon-copy ink blue for the shell, cool paper for the ground, white slips for content, and rubber stamps for state. Payment status is the one authored moment. Layout, navigation and controls stay platform-standard (bottom tabs, native stack, bottom sheets) so the world lends type, palette, density and the stamp, and does not reinvent how an app is operated.
+Baytak records rent and building charges between a resident and the person who runs the building. The world it borrows is the paper receipt book: the logo's teal for the shell, cool teal-tinted paper for the ground, white slips for content, and rubber stamps for state. Payment status is the one authored moment. Layout, navigation and controls stay platform-standard (bottom tabs, native stack, bottom sheets) so the world lends type, palette, density and the stamp, and does not reinvent how an app is operated.
 
 The system is one shared look for iOS and Android (`adaptive`). The whole app (Login, Account, Wallet, admin lists, Collection, Manage and the rest) now sits in this world, not only Home and Collect. Density is calm and operational: 16px screen rhythm, 52px fields and buttons, small crisp corners (slips and plates, not pills). Tokens live as TypeScript constants in `theme.ts`; screens re-skin by changing values there.
 
 **Key Characteristics:**
-- Ink blue carries the shell, primary buttons and door plates; text is tinted from the ink, never neutral gray.
-- Two stamp inks do the state jobs: verdigris is Paid, vermilion is Unpaid. State is always word plus icon, never colour alone.
+- The logo's teal carries the shell, primary buttons and door plates; text is tinted from the ink, never neutral gray.
+- Two stamp inks do the state jobs: green is Paid, vermilion is Unpaid. State is always word plus icon, never colour alone.
 - One family (IBM Plex Sans Arabic), Latin and Arabic, with fixed-width digits for money and numbers.
 - Flat slips with a faint shadow; depth otherwise from paper-on-paper tone.
 - Light mode only.
 
 ## Colors
 
-A cool carbon-blue paper palette: one ink, one paper family, two stamp inks, one decorative brass.
+A cool teal-tinted paper palette: one ink (the logo's teal), one paper family, two stamp inks, one decorative brass.
 
 ### Primary
-- **Carbon Ink** (`colors.ink`): the shell (Home header band, Collect header), primary buttons, active tab, focus border, door plates, selected chips. Companions: **Pressed Ink** (`ink-dark`) for pressed primary, **Deep Ink** (`ink-deep`) for text, secondary-button text and plate rims, **Ink Wash** (`ink-soft`) for secondary buttons, avatars and icon tiles, **Ink Tint** (`ink-tint`) for ghost-pressed and selected option rows.
+- **Logo Teal** (`colors.ink`, `#00847C`): the shell (Home header band, Collect header), primary buttons, active tab, focus border, door plates, selected chips. Companions: **Pressed Ink** (`ink-dark`) for pressed primary, **Deep Ink** (`ink-deep`) for text, secondary-button text and plate rims, **Ink Wash** (`ink-soft`) for secondary buttons, avatars and icon tiles, **Ink Tint** (`ink-tint`) for ghost-pressed and selected option rows.
 
 ### Secondary (state inks)
-- **Verdigris** (`verdigris` on `verdigris-wash`): Paid, success toast, success badge.
+- **Paid Green** (`verdigris` on `verdigris-wash`; the token keeps its old name): Paid, success toast, success badge.
 - **Vermilion** (`vermilion` on `vermilion-wash`): Unpaid, errors, destructive button, danger toast.
 - **Amber** (`amber` on `amber-wash`): Pending, warning toast and badge only.
   Contrast: each ink is documented in source as at least 6:1 on white (that claim holds for white backgrounds only). Ink on its wash is about 5:1, and Vermilion on `pressed-danger` is about 4.35:1; that is the known lower pair. **Deep Vermilion** (`vermilion-deep`) is the pressed fill of the solid destructive button.
@@ -205,7 +205,7 @@ A cool carbon-blue paper palette: one ink, one paper family, two stamp inks, one
 - **Pressed Soft** (`pressed-soft`) and **Pressed Danger** (`pressed-danger`): pressed fills of the secondary and danger buttons.
 
 ### Named Rules
-**The Two Inks Rule.** Verdigris means Paid and vermilion means Unpaid, everywhere, and neither is used for decoration. Amber means Pending.
+**The Two Inks Rule.** Green means Paid and vermilion means Unpaid, everywhere, and neither is used for decoration. Amber means Pending.
 
 **The Words Beside Colour Rule.** A state colour never stands alone: it travels with the word (Paid, Unpaid) and an icon.
 

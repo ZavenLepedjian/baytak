@@ -3,7 +3,7 @@
     "name": "Baytak",
     "slug": "bms",
     "owner": "zavenlep",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "orientation": "portrait",
     "icon": "./assets/adaptive-icon.png",
     "userInterfaceStyle": "light",
@@ -16,8 +16,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.baytak.bms",
-      "buildNumber": "13",
+      "buildNumber": "17",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "The Baytak App uses your location to help you find the closest buildings registered in the app near you."
       }
     },
@@ -27,7 +28,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.baytak.bms",
-      "versionCode": 10,
+      "versionCode": 15,
       "allowBackup": false
     },
     "web": {

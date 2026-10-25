@@ -6,7 +6,8 @@ export type ApartmentChoice = { id: number | string; appartmentNumber: string };
 
 export type TabParamList = {
   Home: undefined;
-  Collect: undefined;
+  /** Open on a given receipt (from the administrator's home); `at` makes a repeat of the same id count as new. */
+  Collect: { receiptId?: number; at?: number } | undefined;
   Manage: undefined;
   Account: undefined;
 };

@@ -17,6 +17,11 @@ if (__DEV__ && !API_KEY) {
 
 export const EAS_PROJECT_ID = '5ade25db-c3e0-4af9-b6bc-9adf24f1bce8';
 
+/** Public pages (website/), also the privacy policy and delete-account URLs given to Google Play and OpenAI. */
+const SITE_URL = 'https://baytakapi8803.z16.web.core.windows.net';
+export const PRIVACY_POLICY_URL = `${SITE_URL}/privacy/`;
+export const TERMS_URL = `${SITE_URL}/terms/`;
+
 /** Request timeout for every API call. */
 export const REQUEST_TIMEOUT_MS = 20000;
 

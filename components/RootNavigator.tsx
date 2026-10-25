@@ -21,6 +21,7 @@ import Wallet from '../screens/Wallet';
 import Profile from '../screens/User/Profile';
 import JoinBuilding from '../screens/User/AppartmentRequest';
 import Buildings from '../screens/User/Buildings';
+import AdminHome from '../screens/Admin/AdminHome';
 import Manage from '../screens/Admin/Manage';
 import Collection from '../screens/Admin/Collection';
 import Apartments from '../screens/Admin/Appartments';
@@ -80,7 +81,8 @@ function Tabs() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={Dashboard} options={{ title: 'Home' }} />
+      {/* Administrators land on the building's dashboard; residents on what they owe. */}
+      <Tab.Screen name="Home" component={isAdmin ? AdminHome : Dashboard} options={{ title: 'Home' }} />
       {isAdmin ? (
         <Tab.Screen
           name="Collect"

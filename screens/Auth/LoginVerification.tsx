@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
-import { CodeField, Cursor, useBlurOnFulfill, useClearByFocusCell } from 'react-native-confirmation-code-field';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { apiRequest } from '../../api/client';
 import { useAuth } from '../../auth/AuthProvider';
-import { Button, Screen, Text, chevronBack, showMessage } from '../../components/ui';
+import { Button, CodeInput, Screen, Text, chevronBack, showMessage } from '../../components/ui';
 import type { ScreenProps } from '../../navigation/types';
 import { colors, HIT, radius, spacing } from '../../theme';
 
@@ -23,9 +22,6 @@ export default function LoginVerification({ navigation, route }: ScreenProps<'Lo
   const [cooldown, setCooldown] = useState(RESEND_SECONDS);
   const submitting = useRef(false);
 
-  const ref = useBlurOnFulfill({ value, cellCount: CELL_COUNT });
-  const [cellProps, getCellOnLayoutHandler] = useClearByFocusCell({ value, setValue });
-
   useEffect(() => {
     if (cooldown <= 0) return;
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
@@ -42,7 +38,6 @@ export default function LoginVerification({ navigation, route }: ScreenProps<'Lo
       submitting.current = true;
       setVerifying(true);
       setError(null);
-      Keyboard.dismiss();
 
       const res = await apiRequest<ValidateResponse>('auth/validate', {
         method: 'POST',
@@ -56,7 +51,6 @@ export default function LoginVerification({ navigation, route }: ScreenProps<'Lo
         if (!res.aborted) {
           setError(res.status === 400 ? 'That code is not correct. Please try again.' : res.error);
           setValue('');
-          setTimeout(() => ref.current?.focus(), 100);
         }
         return;
       }
@@ -65,12 +59,13 @@ export default function LoginVerification({ navigation, route }: ScreenProps<'Lo
         submitting.current = false;
         setVerifying(false);
         setError('We could not sign you in. Please try again.');
+        setValue('');
         return;
       }
       // Signing in swaps the navigator to the signed-in screens, which unmounts this screen.
       await signIn(token, res.data?.userStatus ?? null);
     },
-    [phoneNumber, signIn, ref],
+    [phoneNumber, signIn],
   );
 
   // Submit automatically as soon as the last digit is entered.
@@ -109,31 +104,14 @@ export default function LoginVerification({ navigation, route }: ScreenProps<'Lo
         We sent a 6-digit code to <Text variant="bodyStrong">{phoneNumber}</Text>.
       </Text>
 
-      <CodeField
-        ref={ref}
-        {...cellProps}
+      <CodeInput
         value={value}
-        onChangeText={(text) => {
-          setValue(text.replace(/\D/g, ''));
+        onChange={(text) => {
+          setValue(text);
           if (error) setError(null);
         }}
-        cellCount={CELL_COUNT}
-        rootStyle={styles.codeRoot}
-        keyboardType="number-pad"
-        textContentType="oneTimeCode"
-        autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
-        autoFocus
-        renderCell={({ index, symbol, isFocused }) => (
-          <View
-            key={index}
-            onLayout={getCellOnLayoutHandler(index)}
-            style={[styles.cell, isFocused && styles.cellFocus, !!error && styles.cellError]}
-          >
-            <Text variant="title" style={{ fontSize: 24 }}>
-              {symbol || (isFocused ? <Cursor /> : null)}
-            </Text>
-          </View>
-        )}
+        length={CELL_COUNT}
+        error={!!error}
       />
       {error ? (
         <Text variant="caption" color={colors.danger} style={{ marginTop: spacing.md }} accessibilityLiveRegion="polite">
@@ -170,19 +148,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  codeRoot: { gap: spacing.sm, justifyContent: 'space-between' },
-  cell: {
-    flex: 1,
-    maxWidth: 52,
-    height: 60,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cellFocus: { borderColor: colors.primary, backgroundColor: colors.primaryTint },
-  cellError: { borderColor: colors.danger },
   resendRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, marginTop: spacing.lg },
 });

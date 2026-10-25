@@ -90,3 +90,27 @@ skills-lock.json
 *.db
 *.db-shm
 *.db-wal
+
+# Reviewer demo sign-in code (never commit)
+backend/deploy/*.local.txt
+
+# ChatGPT demo walkthrough: raw screenshots and the built video (published on the website, not committed)
+chatgpt-plugin/demo/frames/
+chatgpt-plugin/demo/*.mp4
+
+# Android bundles are build outputs, uploaded by hand to Play Console
+*.aab
+
+# Firebase config for Android push (built into the app via EAS, kept out of git)
+google-services.json
+
+# Rendered marketing media is published on the marketing-media branch (see marketing/README.md), never committed to main
+marketing/media/
+marketing/media-silent/
+marketing/media-old-blue/
+marketing/ad/*.mp4
+
+# Store upload assets are built from the sources in play-store/ and uploaded by hand
+play-store/*.png
+play-store/*.mp4
+play-store/appstore-*/

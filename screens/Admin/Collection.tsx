@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Linking, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
 import { useApi } from '../../api/useApi';
@@ -22,7 +22,7 @@ import {
 } from '../../components/ui';
 import { currencyLabel, formatAmount, formatDate, fromYmd, ordinalFloor } from '../../functions/format';
 import { useFetch } from '../../hooks/useFetch';
-import type { RootStackParamList } from '../../navigation/types';
+import type { RootStackParamList, TabParamList } from '../../navigation/types';
 import { colors, family, HIT, radius, spacing } from '../../theme';
 
 type Plate = {
@@ -62,7 +62,13 @@ export default function Collection() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const api = useApi();
   const { width } = useWindowDimensions();
-  const [receiptId, setReceiptId] = useState<number | null>(null);
+  const route = useRoute<RouteProp<TabParamList, 'Collect'>>();
+  const [receiptId, setReceiptId] = useState<number | null>(route.params?.receiptId ?? null);
+  // The administrator's home opens a chosen receipt here; `at` makes picking the same one again count.
+  useEffect(() => {
+    const requested = route.params?.receiptId;
+    if (requested) setReceiptId(requested);
+  }, [route.params?.receiptId, route.params?.at]);
   const path = receiptId ? `collection/summary?receiptId=${receiptId}` : 'collection/summary';
   const { data, setData, loading, error, refreshing, refetch } = useFetch<Summary>(path, { refetchOnFocus: true, select: selectSummary });
 

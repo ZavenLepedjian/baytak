@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useApi } from '../api/useApi';
 import { useAuth } from '../auth/AuthProvider';
 import { Avatar, Badge, Card, ConfirmDialog, Divider, Hero, ListRow, Screen, Text, showMessage } from '../components/ui';
-import { FEATURES } from '../config';
+import { FEATURES, PRIVACY_POLICY_URL, TERMS_URL } from '../config';
 import type { RootStackParamList } from '../navigation/types';
 import { colors, spacing } from '../theme';
 
@@ -28,6 +28,9 @@ export default function Account() {
       void signOut({ remote: false });
     }
   };
+
+  const openPage = (url: string) =>
+    Linking.openURL(url).catch(() => showMessage({ message: 'Unable to open the page', type: 'danger' }));
 
   return (
     <Screen
@@ -61,6 +64,12 @@ export default function Account() {
             <ListRow icon="wallet-outline" title="Wallet" subtitle="Income and expenses" onPress={() => navigation.navigate('Wallet')} />
           </>
         ) : null}
+      </Card>
+
+      <Card flush style={{ marginTop: spacing.lg }}>
+        <ListRow icon="shield-checkmark-outline" title="Privacy policy" subtitle="How your data is used" onPress={() => openPage(PRIVACY_POLICY_URL)} />
+        <Divider inset={spacing.lg + 38 + spacing.md} />
+        <ListRow icon="document-text-outline" title="Terms of service" onPress={() => openPage(TERMS_URL)} />
       </Card>
 
       <Card flush style={{ marginTop: spacing.lg }}>

@@ -8,6 +8,8 @@ export { Sheet, ConfirmDialog } from './Sheet';
 export { Stamp, toPaymentState, paymentLabel } from './Stamp';
 export type { PaymentState } from './Stamp';
 export { DoorPlate } from './DoorPlate';
+export { KeyboardSafe } from './KeyboardSafe';
+export { CodeInput } from './CodeInput';
 export { Segmented, DateField, ListRow, InfoBanner } from './Controls';
 export { ToastHost, showMessage } from './Toast';
 export { chevronForward, chevronBack } from './direction';

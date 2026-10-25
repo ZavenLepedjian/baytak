@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '../../theme';
+import { KeyboardSafe } from './KeyboardSafe';
 import { Text } from './Text';
 
 /** Sets the status bar style only while the screen is focused, so stacked screens don't fight over it. */
@@ -61,7 +62,7 @@ export function Screen({
   return (
     <View style={styles.root}>
       {header}
-      {body}
+      <KeyboardSafe>{body}</KeyboardSafe>
     </View>
   );
 }

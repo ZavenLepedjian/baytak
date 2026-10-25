@@ -3,10 +3,8 @@ import {
   AccessibilityInfo,
   Animated,
   Easing,
-  KeyboardAvoidingView,
   Modal,
   PanResponder,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,6 +16,7 @@ import { colors, HIT, radius, spacing } from '../../theme';
 import { Text } from './Text';
 import { Button } from './Button';
 import { ToastHost } from './Toast';
+import { KeyboardSafe } from './KeyboardSafe';
 
 type SheetProps = {
   visible: boolean;
@@ -103,7 +102,7 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
 
   return (
     <Modal visible transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardSafe ios="padding" style={styles.root}>
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: progress }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" accessibilityRole="button">
             <View style={styles.backdrop} />
@@ -135,7 +134,7 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
           </ScrollView>
         </Animated.View>
         <ToastHost />
-      </KeyboardAvoidingView>
+      </KeyboardSafe>
     </Modal>
   );
 }

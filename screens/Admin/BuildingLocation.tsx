@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import Constants from 'expo-constants';
 import MapView, { Marker, Region } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Text } from '../../components/ui';
@@ -12,7 +13,36 @@ type Point = { latitude: number; longitude: number };
 // Beirut: sensible default when neither a saved point nor the device location is available.
 const FALLBACK: Point = { latitude: 33.8938, longitude: 35.5018 };
 
-export default function BuildingLocation({ navigation, route }: ScreenProps<'BuildingLocation'>) {
+/** Android needs a Google Maps key baked into the build (see app.config.js). Without one a map view would crash the app. */
+const MAPS_AVAILABLE = Platform.OS !== 'android' || Constants.expoConfig?.extra?.mapsEnabled === true;
+
+export default function BuildingLocation(props: ScreenProps<'BuildingLocation'>) {
+  return MAPS_AVAILABLE ? <MapPicker {...props} /> : <CurrentLocationPicker {...props} />;
+}
+
+/** Used when the map is not available: the building's location is the device's current location. */
+function CurrentLocationPicker({ navigation }: ScreenProps<'BuildingLocation'>) {
+  const insets = useSafeAreaInsets();
+  const { coords, refresh } = useLocation();
+
+  const confirm = async () => {
+    const here = coords ?? (await refresh());
+    if (!here) return;
+    navigation.popTo('SetupBuilding', { latitude: here.lat, longitude: here.long }, { merge: true });
+  };
+
+  return (
+    <View style={[styles.flex, { justifyContent: 'center', padding: spacing.lg, paddingBottom: insets.bottom + spacing.lg }]}>
+      <Text variant="title" style={{ marginBottom: spacing.sm }}>Use your current location</Text>
+      <Text variant="body" color={colors.textMuted} style={{ marginBottom: spacing.xl }}>
+        The map is not available in this version. Stand at the building and Baytak will use your current location for it.
+      </Text>
+      <Button title="Use my current location" icon="locate" onPress={confirm} />
+    </View>
+  );
+}
+
+function MapPicker({ navigation, route }: ScreenProps<'BuildingLocation'>) {
   const insets = useSafeAreaInsets();
   const { coords } = useLocation();
   const initial = route.params && route.params.latitude !== undefined && route.params.longitude !== undefined

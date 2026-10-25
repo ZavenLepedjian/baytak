@@ -1,59 +1,60 @@
 import { Platform, TextStyle, ViewStyle } from 'react-native';
 
 /**
- * The Baytak world: a building's receipt book. Carbon-copy ink blue carries the shell, buttons and door plates;
- * the ground is cool carbon-blue paper; two stamp inks do the state jobs (verdigris = Paid, vermilion = Unpaid).
+ * The Baytak world: a building's receipt book. The logo's teal carries the shell, buttons and door plates;
+ * the ground is cool teal-tinted paper; two stamp inks do the state jobs (green = Paid, vermilion = Unpaid).
  * Token names are stable so screens re-skin by changing values here.
  */
 export const colors = {
-  // Ink (primary): shell, primary buttons, door plates
-  primary: '#1F2A7A',
-  primaryDark: '#18205F',
-  primaryDeep: '#141A44',
-  primarySoft: '#DDE2F5',
-  primaryTint: '#EEF0FA',
+  // Teal (primary, the logo's bowl): shell, primary buttons, door plates
+  primary: '#00847C',
+  primaryDark: '#006B65',
+  primaryDeep: '#05302E',
+  primarySoft: '#D3EFEC',
+  primaryTint: '#EAF6F5',
 
   // Paper
-  bg: '#EDF0F7',
+  bg: '#EEF4F3',
   surface: '#FFFFFF',
-  surfaceMuted: '#E3E7F2',
-  border: '#D3D9EA',
-  borderStrong: '#AEB6D2',
+  surfaceMuted: '#E1EAE9',
+  border: '#D0DDDC',
+  borderStrong: '#A9BDBB',
   /** Borders of inputs and unchecked boxes: 3:1 against white and paper (WCAG 1.4.11). */
-  borderInput: '#7A81A3',
+  borderInput: '#6F8583',
 
-  // Text (tinted from the ink, never neutral gray)
-  text: '#141A44',
-  textMuted: '#4B5273',
-  textFaint: '#666C8A',
+  // Text (tinted from the teal, never neutral gray)
+  text: '#0B2625',
+  textMuted: '#3F5654',
+  textFaint: '#5B706E',
   textOnPrimary: '#FFFFFF',
 
-  // Stamp inks: each has a text/ink colour (>= 6:1 on white) and a soft wash
-  success: '#0B6B4D',
-  successSoft: '#DDF1E8',
+  // Stamp inks: each has a text/ink colour (>= 6:1 on white) and a soft wash.
+  // Paid is a true green so it never reads as the teal of the shell.
+  success: '#2E6B1F',
+  successSoft: '#E3F1DB',
   warning: '#8A5A00',
   warningSoft: '#FBEFD0',
   danger: '#B3321B',
   dangerDeep: '#8F2815',
   dangerSoft: '#FBE3DC',
-  info: '#1F2A7A',
-  infoSoft: '#DDE2F5',
+  info: '#00847C',
+  infoSoft: '#D3EFEC',
 
   /** Engraved rim of a door plate. Decoration only, never text. */
   brass: '#B8913F',
-  /** Light text on an ink plate. */
-  plateText: '#F4F6FF',
+  /** Light text on a teal plate. */
+  plateText: '#F2FBFA',
 
-  /** Text and washes laid over the ink shell. */
+  /** Text and washes laid over the teal shell. */
   onInk: '#FFFFFF',
   onInkMuted: 'rgba(255,255,255,0.85)',
   onInkWash: 'rgba(255,255,255,0.18)',
 
   /** Pressed states of the soft buttons. */
-  pressedSoft: '#CBD2EE',
+  pressedSoft: '#BFE3DF',
   pressedDanger: '#F6D0C6',
 
-  overlay: 'rgba(20, 26, 68, 0.5)',
+  overlay: 'rgba(5, 48, 46, 0.5)',
 } as const;
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
@@ -83,11 +84,11 @@ export const fonts = {
 
 export const shadow = {
   sm: Platform.select<ViewStyle>({
-    ios: { shadowColor: '#141A44', shadowOpacity: 0.08, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
+    ios: { shadowColor: '#05302E', shadowOpacity: 0.08, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
     default: { elevation: 2 },
   }) as ViewStyle,
   md: Platform.select<ViewStyle>({
-    ios: { shadowColor: '#141A44', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
+    ios: { shadowColor: '#05302E', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
     default: { elevation: 6 },
   }) as ViewStyle,
 };

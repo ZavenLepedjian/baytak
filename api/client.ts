@@ -1,4 +1,5 @@
 import { API_BASE_URL, API_KEY, REQUEST_TIMEOUT_MS } from '../config';
+import { buildUrl } from './url';
 
 export type ApiSuccess<T> = { ok: true; status: number; data: T };
 export type ApiFailure = {
@@ -49,7 +50,7 @@ function fail(status: number, error: string, extra?: Partial<ApiFailure>): ApiFa
 export async function apiRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<ApiResult<T>> {
   const { method = 'GET', body, token, signal, withKey = true, timeoutMs = REQUEST_TIMEOUT_MS } = options;
 
-  const url = `${API_BASE_URL}/${path.replace(/^\//, '')}${withKey ? `?code=${encodeURIComponent(API_KEY)}` : ''}`;
+  const url = buildUrl(API_BASE_URL, path, withKey ? API_KEY : undefined);
 
   const controller = new AbortController();
   let timedOut = false;

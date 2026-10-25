@@ -70,7 +70,7 @@ const fieldIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
 export const iconForField = (name: string): keyof typeof Ionicons.glyphMap => fieldIcons[name.trim().toLowerCase()] ?? 'receipt-outline';
 
 /** What is owed, per currency. Currencies are never added together. */
-function totalsByCurrency(unpaid: ReceiptItem[]): { currency: 'USD' | 'LBP'; amount: number }[] {
+export function totalsByCurrency(unpaid: ReceiptItem[]): { currency: 'USD' | 'LBP'; amount: number }[] {
   const sums = new Map<'USD' | 'LBP', number>();
   for (const item of unpaid) {
     const currency = currencyLabel(item.currency);

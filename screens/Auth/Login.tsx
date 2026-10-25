@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { ImageBackground, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
+import { ImageBackground, Keyboard, Linking, ScrollView, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiRequest } from '../../api/client';
-import { Button, ConfirmDialog, FocusedStatusBar, Text, TextField, showMessage } from '../../components/ui';
+import { Button, ConfirmDialog, FocusedStatusBar, KeyboardSafe, Text, TextField, showMessage } from '../../components/ui';
+import { PRIVACY_POLICY_URL, TERMS_URL } from '../../config';
 import { useLocation } from '../../location/LocationProvider';
 import type { ScreenProps } from '../../navigation/types';
 import { colors, radius, spacing } from '../../theme';
@@ -15,6 +16,9 @@ export default function LoginScreen({ navigation }: ScreenProps<'Login'>) {
   const [busy, setBusy] = useState<'login' | 'admin' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmAdmin, setConfirmAdmin] = useState(false);
+
+  const openPage = (url: string) =>
+    Linking.openURL(url).catch(() => showMessage({ message: 'Unable to open the page', type: 'danger' }));
 
   const requestCode = async (requestAdmin: '' | 'request-admin') => {
     const phone = phoneNumber.trim();
@@ -54,8 +58,8 @@ export default function LoginScreen({ navigation }: ScreenProps<'Login'>) {
   return (
     <ImageBackground source={require('../../assets/images/login-background.jpg')} resizeMode="cover" style={styles.flex}>
       <FocusedStatusBar style="light" />
-      <LinearGradient colors={['rgba(20,26,68,0.9)', 'rgba(31,42,122,0.62)']} style={StyleSheet.absoluteFill} />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <LinearGradient colors={['rgba(5,48,46,0.9)', 'rgba(0,132,124,0.62)']} style={StyleSheet.absoluteFill} />
+      <KeyboardSafe ios="padding">
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
@@ -107,6 +111,18 @@ export default function LoginScreen({ navigation }: ScreenProps<'Login'>) {
               style={{ marginTop: spacing.md }}
             />
 
+            <Text variant="caption" color={colors.textMuted} align="center" style={{ marginTop: spacing.lg }}>
+              By continuing you accept our{' '}
+              <Text variant="caption" color={colors.primary} accessibilityRole="link" onPress={() => openPage(TERMS_URL)}>
+                Terms
+              </Text>{' '}
+              and{' '}
+              <Text variant="caption" color={colors.primary} accessibilityRole="link" onPress={() => openPage(PRIVACY_POLICY_URL)}>
+                Privacy Policy
+              </Text>
+              .
+            </Text>
+
             <ConfirmDialog
               visible={confirmAdmin}
               title="Request administrator access?"
@@ -121,7 +137,7 @@ export default function LoginScreen({ navigation }: ScreenProps<'Login'>) {
             />
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardSafe>
     </ImageBackground>
   );
 }

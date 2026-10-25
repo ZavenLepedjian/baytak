@@ -21,6 +21,7 @@ and nobody has to chase a WhatsApp thread or a paper list. A personal wallet is 
 | `/` (`App.tsx`, `screens/`, `components/`, `auth/`, `api/`, `hooks/`, `theme.ts`) | The mobile app |
 | `components/ui/` | The app's own design-system components (Text, Button, TextField, Card, Screen, Sheet, Toast, Stamp, DoorPlate, ...) |
 | `backend/` | .NET 10 Azure Functions API, its tests and its README |
+| `backend/src/Baytak.Mcp/` | MCP server that lets people use Baytak from ChatGPT or Claude, signing in with their phone. See [its README](backend/src/Baytak.Mcp/README.md) |
 | `PRODUCT.md`, `DESIGN.md` | Who the app is for, and the visual system (palette, type, components, do's and don'ts). Read these before changing the UI |
 
 ## Run the app

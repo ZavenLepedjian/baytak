@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerAndroid, DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
@@ -24,6 +24,7 @@ export function Segmented<T extends string>({
   onChange: (value: T) => void;
   disabled?: boolean;
 }) {
+  const { fontScale } = useWindowDimensions();
   return (
     <View style={styles.segment} accessibilityRole="radiogroup">
       {options.map((o) => {
@@ -40,7 +41,18 @@ export function Segmented<T extends string>({
             }}
             style={[styles.segmentItem, active && styles.segmentActive]}
           >
-            <Text variant="bodyStrong" color={active ? colors.onInk : colors.textMuted} adjustsFontSizeToFit numberOfLines={1} minimumFontScale={0.75}>
+            {/* Fixed-size label that fills its segment. iOS shrank the labels to the minimum scale with
+                adjustsFontSizeToFit inside this centred flex item, so the text is only shrunk when the user has
+                enlarged the system text size and four labels no longer fit. */}
+            <Text
+              variant="bodyStrong"
+              color={active ? colors.onInk : colors.textMuted}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              adjustsFontSizeToFit={fontScale > 1.15}
+              minimumFontScale={0.85}
+              style={styles.segmentLabel}
+            >
               {o.label}
             </Text>
           </Pressable>
@@ -179,6 +191,7 @@ const styles = StyleSheet.create({
   segment: { flexDirection: 'row', backgroundColor: colors.surfaceMuted, borderRadius: radius.md, padding: 4, gap: 4 },
   segmentItem: { flex: 1, minHeight: HIT, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm + 2 },
   segmentActive: { backgroundColor: colors.primary },
+  segmentLabel: { alignSelf: 'stretch', textAlign: 'center', paddingHorizontal: 2 },
   dateBox: {
     flexDirection: 'row',
     alignItems: 'center',
