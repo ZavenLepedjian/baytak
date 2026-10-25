@@ -67,12 +67,43 @@ public sealed class ExpoPushSender : IPushSender
 
                 using var response = await client.SendAsync(request, ct);
                 if (!response.IsSuccessStatusCode)
+                {
                     _logger.LogWarning("Expo push service answered {Status}", (int)response.StatusCode);
+                    continue;
+                }
+                LogRejections(await response.Content.ReadAsStringAsync(ct), batch.Length);
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogWarning(ex, "Push notification delivery failed");
+        }
+    }
+
+    /// <summary>
+    /// Expo answers 200 even when it refuses a push (a device that is gone, missing Firebase or Apple credentials, a bad token),
+    /// so the per-push tickets are read and every refusal is logged. Tokens themselves are never logged.
+    /// </summary>
+    internal void LogRejections(string body, int sent)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (!doc.RootElement.TryGetProperty("data", out var tickets) || tickets.ValueKind != JsonValueKind.Array) return;
+            var refused = 0;
+            foreach (var ticket in tickets.EnumerateArray())
+            {
+                if (ticket.TryGetProperty("status", out var status) && status.GetString() == "ok") continue;
+                refused++;
+                var code = ticket.TryGetProperty("details", out var details) && details.TryGetProperty("error", out var e) ? e.GetString() : null;
+                var message = ticket.TryGetProperty("message", out var m) ? m.GetString() : null;
+                _logger.LogWarning("Expo refused a push: {Error}. {Message}", code ?? "unknown", message);
+            }
+            _logger.LogInformation("Expo push: {Accepted} of {Sent} accepted", sent - refused, sent);
+        }
+        catch (JsonException)
+        {
+            _logger.LogWarning("Expo push service sent an answer that could not be read");
         }
     }
 }

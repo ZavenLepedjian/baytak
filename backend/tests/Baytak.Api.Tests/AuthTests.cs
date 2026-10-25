@@ -221,6 +221,30 @@ public class AuthTests
         Assert.Equal(400, (await app.Call<AuthFunctions>((f, r, ct) => f.Validate(r, ct), new { phoneNumber = "70 000 111", pincode = "424242" })).Status);
     }
 
+    [Fact]
+    public async Task Fixed_code_accounts_can_sign_in_again_straight_after_signing_out_but_other_numbers_still_wait()
+    {
+        using var app = new TestApp(o => { o.FixedCode = "424242"; o.FixedCodePhones = Normalized; });
+
+        // A tester who is signed out can request the (static) code again after a couple of seconds, far past the old 10 a day cap.
+        for (var i = 0; i < 12; i++)
+        {
+            Assert.True((await app.Call<AuthFunctions>((f, r, ct) => f.Login(r, ct), new { phoneNumber = Phone })).Ok, $"request {i + 1}");
+            app.Time.Advance(TimeSpan.FromSeconds(3));
+        }
+        Assert.Empty(app.Sms.Sent);
+        Assert.True((await app.Call<AuthFunctions>((f, r, ct) => f.Validate(r, ct), new { phoneNumber = Phone, pincode = "424242" })).Ok);
+
+        // Not instantly, though: the short pause and the daily cap still stop someone hammering the endpoint to guess the code.
+        Assert.True((await app.Call<AuthFunctions>((f, r, ct) => f.Login(r, ct), new { phoneNumber = Phone })).Ok);
+        Assert.Equal(429, (await app.Call<AuthFunctions>((f, r, ct) => f.Login(r, ct), new { phoneNumber = Phone })).Status);
+
+        // Every other number keeps the 30 second wait.
+        Assert.True((await app.Call<AuthFunctions>((f, r, ct) => f.Login(r, ct), new { phoneNumber = "70 000 111" })).Ok);
+        app.Time.Advance(TimeSpan.FromSeconds(10));
+        Assert.Equal(429, (await app.Call<AuthFunctions>((f, r, ct) => f.Login(r, ct), new { phoneNumber = "70 000 111" })).Status);
+    }
+
     [Theory]
     [InlineData("03 123 456", "+961", "+9613123456")]
     [InlineData("+961 3 123 456", "+961", "+9613123456")]

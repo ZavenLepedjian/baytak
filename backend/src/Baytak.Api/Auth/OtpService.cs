@@ -17,6 +17,13 @@ public sealed class OtpOptions
     public int ResendCooldownSeconds { get; set; } = 30;
     public int MaxPerDay { get; set; } = 10;
     /// <summary>
+    /// Fixed-code test accounts never send an SMS, so the 30 second wait and the 10 a day cap protect nothing; they only
+    /// lock a reviewer or tester out right after signing out. A short pause and a larger daily cap remain so the fixed
+    /// code (5 guesses per request) cannot be guessed by hammering the endpoint.
+    /// </summary>
+    public int FixedCodeResendCooldownSeconds { get; set; } = 2;
+    public int FixedCodeMaxPerDay { get; set; } = 200;
+    /// <summary>
     /// Optional fixed code for specific test accounts (e.g. app-store review). Only honoured for numbers in
     /// <see cref="FixedCodePhones"/>; those numbers never receive an SMS. Leave empty in production.
     /// </summary>
@@ -39,18 +46,24 @@ public interface IOtpService
 
 public sealed class OtpService : IOtpService
 {
+    /// <summary>Stored instead of a code hash when the code lives with the external verifier. No code can hash to it.</summary>
+    private const string ExternalCodeMarker = "external-verifier";
+
     private readonly BaytakDbContext _db;
     private readonly ISmsSender _sms;
+    private readonly IExternalVerifier? _verifier;
     private readonly OtpOptions _options;
     private readonly SmsOptions _smsOptions;
     private readonly byte[] _pepper;
     private readonly TimeProvider _time;
     private readonly ILogger<OtpService> _logger;
 
-    public OtpService(BaytakDbContext db, ISmsSender sms, IOptions<OtpOptions> options, IOptions<SmsOptions> smsOptions, IOptions<JwtOptions> jwt, TimeProvider time, ILogger<OtpService> logger)
+    public OtpService(BaytakDbContext db, ISmsSender sms, IOptions<OtpOptions> options, IOptions<SmsOptions> smsOptions, IOptions<JwtOptions> jwt,
+        TimeProvider time, ILogger<OtpService> logger, IExternalVerifier? verifier = null)
     {
         _db = db;
         _sms = sms;
+        _verifier = verifier;
         _options = options.Value;
         _smsOptions = smsOptions.Value;
         _pepper = Encoding.UTF8.GetBytes(jwt.Value.Key);
@@ -69,8 +82,10 @@ public sealed class OtpService : IOtpService
             .OrderByDescending(o => o.CreatedAt)
             .ToListAsync(ct);
 
-        if (recent.Count > 0 && (now - recent[0].CreatedAt).TotalSeconds < _options.ResendCooldownSeconds) return OtpRequestOutcome.TooSoon;
-        if (recent.Count >= _options.MaxPerDay) return OtpRequestOutcome.DailyLimit;
+        var cooldown = useFixed ? _options.FixedCodeResendCooldownSeconds : _options.ResendCooldownSeconds;
+        var maxPerDay = useFixed ? _options.FixedCodeMaxPerDay : _options.MaxPerDay;
+        if (recent.Count > 0 && (now - recent[0].CreatedAt).TotalSeconds < cooldown) return OtpRequestOutcome.TooSoon;
+        if (recent.Count >= maxPerDay) return OtpRequestOutcome.DailyLimit;
 
         // The status is taken only from this request. It is never inherited from an earlier code: auth/login is
         // anonymous, so an earlier code may have been requested by someone else ("request-admin" planted on a
@@ -82,12 +97,14 @@ public sealed class OtpService : IOtpService
         // Data minimisation: codes older than two days are useless (the rate-limit window is one day).
         await _db.OtpCodes.Where(o => o.CreatedAt < now.AddDays(-2)).ExecuteDeleteAsync(ct);
 
-        var code = useFixed ? _options.FixedCode : GenerateCode(_options.CodeLength);
+        // With an external verifier (Twilio Verify) the code is made and checked there; test numbers keep their fixed code.
+        var external = _verifier is not null && !useFixed;
+        var code = useFixed ? _options.FixedCode : external ? "" : GenerateCode(_options.CodeLength);
         var record = new OtpCode
         {
             Id = Guid.NewGuid(),
             PhoneNumber = phone,
-            CodeHash = Hash(phone, code),
+            CodeHash = external ? ExternalCodeMarker : Hash(phone, code),
             RequestedStatus = status,
             Latitude = lat,
             Longitude = lon,
@@ -101,7 +118,8 @@ public sealed class OtpService : IOtpService
         {
             try
             {
-                await _sms.SendAsync(phone, $"Your Baytak verification code is {code}. It expires in {_options.TtlMinutes} minutes.", ct);
+                if (external) await _verifier!.StartAsync(phone, ct);
+                else await _sms.SendAsync(phone, $"Your Baytak verification code is {code}. It expires in {_options.TtlMinutes} minutes.", ct);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -139,9 +157,22 @@ public sealed class OtpService : IOtpService
             return new OtpVerifyResult(OtpVerifyOutcome.TooManyAttempts);
         }
 
-        var expected = Encoding.ASCII.GetBytes(otp.CodeHash);
-        var actual = Encoding.ASCII.GetBytes(Hash(phone, code.Trim()));
-        if (!CryptographicOperations.FixedTimeEquals(expected, actual))
+        bool correct;
+        if (otp.CodeHash == ExternalCodeMarker)
+        {
+            // Count the attempt before asking the provider, so a failure there cannot be used to try codes for free.
+            await _db.SaveChangesAsync(ct);
+            var digits = code.Trim();
+            correct = _verifier is not null && digits.Length is >= 4 and <= 10 && digits.All(char.IsAsciiDigit)
+                      && await _verifier.CheckAsync(phone, digits, ct);
+        }
+        else
+        {
+            var expected = Encoding.ASCII.GetBytes(otp.CodeHash);
+            var actual = Encoding.ASCII.GetBytes(Hash(phone, code.Trim()));
+            correct = CryptographicOperations.FixedTimeEquals(expected, actual);
+        }
+        if (!correct)
         {
             await _db.SaveChangesAsync(ct);
             return new OtpVerifyResult(OtpVerifyOutcome.Invalid);

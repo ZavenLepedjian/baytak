@@ -45,11 +45,21 @@ var connection = config.GetConnectionString("Baytak") ?? config["ConnectionStrin
 if (string.IsNullOrWhiteSpace(connection))
     throw new InvalidOperationException("Set ConnectionStrings:Baytak (env var ConnectionStrings__Baytak).");
 
-builder.Services.AddDbContext<BaytakDbContext>(options =>
+if (Postgres.IsProvider(provider))
 {
-    if (provider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase)) options.UseSqlite(connection);
-    else options.UseSqlServer(connection, sql => sql.EnableRetryOnFailure());
-});
+    // PostgreSQL (Azure Database for PostgreSQL flexible server). Its own context type carries its own migrations.
+    builder.Services.AddSingleton(_ => Postgres.CreateDataSource(connection, config));
+    builder.Services.AddDbContext<BaytakDbContext, PostgresDbContext>((services, options) =>
+        options.UseNpgsql(services.GetRequiredService<Npgsql.NpgsqlDataSource>(), pg => pg.EnableRetryOnFailure()));
+}
+else
+{
+    builder.Services.AddDbContext<BaytakDbContext>(options =>
+    {
+        if (provider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase)) options.UseSqlite(connection);
+        else options.UseSqlServer(connection, sql => sql.EnableRetryOnFailure());
+    });
+}
 
 // ---- services
 builder.Services.AddSingleton(TimeProvider.System);
@@ -71,6 +81,8 @@ if (smsProvider.Equals("Log", StringComparison.OrdinalIgnoreCase))
 else
 {
     builder.Services.AddScoped<ISmsSender, TwilioSmsSender>();
+    // Twilio Verify makes, sends and checks the codes itself.
+    if (smsProvider.Equals("TwilioVerify", StringComparison.OrdinalIgnoreCase)) builder.Services.AddScoped<IExternalVerifier, TwilioVerifier>();
 }
 
 var host = builder.Build();

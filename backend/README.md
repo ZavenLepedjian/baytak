@@ -17,8 +17,13 @@ backend/
     Domain/                validation rules (wallet entries, phone numbers, text)
     Services/              Expo push sender
     Common/                response helpers, auth guard, base class
+  src/Baytak.Mcp/          MCP server for ChatGPT and Claude (separate Functions app), see its README
   tests/Baytak.Api.Tests/  xUnit: runs the real handlers against in-memory SQLite
+  tests/Baytak.Mcp.Tests/  xUnit: OAuth sign-in and every MCP tool against the real API, in memory
 ```
+
+People can also use Baytak from ChatGPT (or Claude) through [the MCP server](src/Baytak.Mcp/README.md): they sign in with
+their phone number and SMS code, and its tools call this API as them.
 
 ## How the app maps to the API
 
@@ -97,15 +102,17 @@ Set as app settings in Azure (`:` becomes `__`) or in `local.settings.json`.
 
 | Setting | Required | Purpose |
 | --- | --- | --- |
-| `ConnectionStrings__Baytak` | yes | Azure SQL connection string (SQLite file path when `Database__Provider=Sqlite`) |
-| `Database__Provider` | no | `SqlServer` (default) or `Sqlite` |
+| `ConnectionStrings__Baytak` | yes | Azure SQL or PostgreSQL connection string (SQLite file path when `Database__Provider=Sqlite`) |
+| `Database__Provider` | no | `SqlServer` (default), `Postgres` or `Sqlite` |
+| `Database__EntraAuth` | no | `true` (PostgreSQL only): sign in with the app's managed identity instead of a password. The connection string then has no password, e.g. `Host=<server>.postgres.database.azure.com;Database=baytak;Username=<identity name>;Ssl Mode=Require`. `Database__ManagedIdentityClientId` picks a user-assigned identity |
 | `Database__AutoMigrate` | no | Apply EF migrations on startup (default `true`) |
 | `Jwt__Key` | yes | HMAC secret, **≥ 32 characters**. Also keys the code hashes. Store in Key Vault |
 | `Jwt__Issuer`, `Jwt__Audience`, `Jwt__ExpiryDays` | no | Defaults `baytak`, `baytak-app`, `30` |
 | `Phone__DefaultCountryCode` | no | Prefix for numbers typed without one (default `+961`) |
-| `Sms__Provider` | yes | `Twilio` (default) or `Log` (development only) |
+| `Sms__Provider` | yes | `Twilio` (default: the API makes the code and sends it with Twilio Messaging), `TwilioVerify` (Twilio Verify makes, sends and checks the code) or `Log` (development only) |
 | `Sms__AllowedCountryCodes` | no | Countries that may receive login SMS, default `961`. Comma separated, `*` = all. Blocks SMS-pumping fraud |
 | `Sms__Twilio__AccountSid`, `AuthToken`, `From` *or* `MessagingServiceSid` | with Twilio | |
+| `Sms__Twilio__AccountSid`, `AuthToken`, `VerifyServiceSid` | with TwilioVerify | The Verify service's friendly name appears in the SMS. The API's resend wait, daily limit, allowed countries, attempt limit and fixed test codes still apply in front of Verify |
 | `Otp__TtlMinutes`, `MaxAttempts`, `ResendCooldownSeconds`, `MaxPerDay` | no | Defaults 5 / 5 / 30 / 10 |
 | `Otp__FixedCode` + `Otp__FixedCodePhones` | no | A fixed code for specific test numbers only (e.g. app-store review). No SMS is sent for them. Leave empty in production |
 | `Push__Enabled`, `Push__AccessToken` | no | Expo push. The token is only needed if "enhanced push security" is enabled in Expo |
@@ -164,6 +171,25 @@ az functionapp keys list -n baytak-api-$SUFFIX -g $RG --query functionKeys.defau
 > the secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` (a federated credential for the repo).
 > Flex Consumption does not accept publish profiles.
 
+### PostgreSQL
+
+Azure Database for PostgreSQL (flexible server, PostgreSQL 16) works with `Database__Provider=Postgres`. It has its own
+migrations (`Migrations/Postgres`, context `PostgresDbContext`), applied on start like the SQL Server ones. After a model
+change, add a migration for each provider:
+
+```bash
+dotnet ef migrations add <Name>                                   # SQL Server
+dotnet ef migrations add <Name> --context PostgresDbContext --output-dir Migrations/Postgres --namespace Baytak.Api.Migrations.Postgres
+```
+
+To run every test against PostgreSQL instead of SQLite, point `BAYTAK_TEST_POSTGRES` at a server where the user may create
+databases; each test gets a fresh database, built by the migrations and dropped afterwards:
+
+```bash
+docker run -d --name baytak-pg -e POSTGRES_PASSWORD=test -p 55432:5432 postgres:16-alpine
+BAYTAK_TEST_POSTGRES="Host=localhost;Port=55432;Username=postgres;Password=test" dotnet test
+```
+
 ### Upgrading an existing Function App to .NET 10
 
 A Linux **Consumption** app cannot run .NET 10. Create a Flex Consumption app as above, deploy to it, move the app
@@ -211,3 +237,9 @@ Reviewed against OWASP ASVS / API Security Top 10 and OWASP MASVS (mobile).
 * The function key in the app is not a secret (it ships in the app). Real protection is the JWT.
 * Next steps worth considering: rotate the old function key that was committed in earlier versions of the app, Key Vault references for secrets, per-IP rate limiting at the edge (Azure Front Door /
   API Management) for `auth/*`, and a back-office page for approving administrators.
+
+## Reviewer demo (ChatGPT app directory and Play review)
+
+`deploy/setup-reviewer-demo.ps1` creates two demo accounts (administrator +961 70 000 001, resident +961 70 000 002) that sign in with a
+shared fixed code instead of an SMS, then a sample building with receipts. Run `-Phase accounts`, then `deploy/approve-demo-admin.ps1`
+(one SQL line, asks for the postgres password), then `-Phase seed`. The code is written to `deploy/reviewer-code.local.txt` (git-ignored).

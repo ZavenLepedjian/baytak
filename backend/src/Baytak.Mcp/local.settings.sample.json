@@ -1,0 +1,16 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+
+    "Mcp__PublicBaseUrl": "http://localhost:7072",
+    "Mcp__SecretKey": "<32 random bytes, base64: openssl rand -base64 32>",
+    "Mcp__ApiBaseUrl": "http://localhost:7071/api",
+    "Mcp__ApiKey": "",
+    "Mcp__ReplayStore": "Memory"
+  },
+  "Host": {
+    "LocalHttpPort": 7072
+  }
+}

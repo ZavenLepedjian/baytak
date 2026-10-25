@@ -35,6 +35,28 @@ public sealed class FakeSms : ISmsSender
     }
 }
 
+/// <summary>Plays Twilio Verify: remembers who got a code (always 482917 here) and checks it.</summary>
+public sealed class FakeVerifier : IExternalVerifier
+{
+    public const string Code = "482917";
+    public List<string> Started { get; } = new();
+    public List<(string To, string Code)> Checks { get; } = new();
+    public bool Fail { get; set; }
+
+    public Task StartAsync(string toE164, CancellationToken ct)
+    {
+        if (Fail) throw new HttpRequestException("Twilio Verify down");
+        Started.Add(toE164);
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> CheckAsync(string toE164, string code, CancellationToken ct)
+    {
+        Checks.Add((toE164, code));
+        return Task.FromResult(Started.Contains(toE164) && code == Code);
+    }
+}
+
 public sealed class FakePush : IPushSender
 {
     public List<(string?[] Tokens, string Title, string Body)> Sent { get; } = new();
@@ -57,20 +79,20 @@ public sealed record Response(int Status, string Body)
 /// <summary>
 /// Hosts the real function classes against an in-memory SQLite database, without the Functions host.
 /// Requests are plain <see cref="HttpRequest"/> objects, so handlers run exactly as they do in Azure.
+/// With BAYTAK_TEST_POSTGRES set to a PostgreSQL connection string (a user allowed to create databases), every test
+/// instead gets its own fresh PostgreSQL database, built by the PostgreSQL migrations and dropped afterwards.
 /// </summary>
 public sealed class TestApp : IDisposable
 {
-    private readonly SqliteConnection _connection;
+    private readonly SqliteConnection? _connection;
+    private readonly bool _postgres;
     public ServiceProvider Services { get; }
     public FakeSms Sms { get; } = new();
     public FakePush Push { get; } = new();
     public FakeTimeProvider Time { get; } = new(new DateTimeOffset(2025, 3, 1, 9, 0, 0, TimeSpan.Zero));
 
-    public TestApp(Action<OtpOptions>? configureOtp = null, Action<SmsOptions>? configureSms = null)
+    public TestApp(Action<OtpOptions>? configureOtp = null, Action<SmsOptions>? configureSms = null, FakeVerifier? verifier = null)
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
         var services = new ServiceCollection();
         services.AddLogging();
         services.Configure<JwtOptions>(o => o.Key = new string('k', 48));
@@ -78,16 +100,31 @@ public sealed class TestApp : IDisposable
         services.Configure<SmsOptions>(o => configureSms?.Invoke(o));
         services.Configure<PhoneOptions>(_ => { });
         services.AddSingleton<TimeProvider>(Time);
-        services.AddDbContext<BaytakDbContext>(o => o.UseSqlite(_connection));
+        var postgres = Environment.GetEnvironmentVariable("BAYTAK_TEST_POSTGRES");
+        if (string.IsNullOrWhiteSpace(postgres))
+        {
+            _connection = new SqliteConnection("DataSource=:memory:");
+            _connection.Open();
+            services.AddDbContext<BaytakDbContext>(o => o.UseSqlite(_connection));
+        }
+        else
+        {
+            _postgres = true;
+            var database = new Npgsql.NpgsqlConnectionStringBuilder(postgres) { Database = "baytak_test_" + Guid.NewGuid().ToString("N") }.ConnectionString;
+            services.AddDbContext<BaytakDbContext, PostgresDbContext>(o => o.UseNpgsql(database));
+        }
         services.AddSingleton<ITokenService, TokenService>();
         services.AddScoped<IAccessGuard, AccessGuard>();
         services.AddScoped<IOtpService, OtpService>();
         services.AddSingleton<ISmsSender>(Sms);
         services.AddSingleton<IPushSender>(Push);
+        if (verifier is not null) services.AddSingleton<IExternalVerifier>(verifier);
         Services = services.BuildServiceProvider();
 
         using var scope = Services.CreateScope();
-        scope.ServiceProvider.GetRequiredService<BaytakDbContext>().Database.EnsureCreated();
+        var db = scope.ServiceProvider.GetRequiredService<BaytakDbContext>();
+        if (_postgres) db.Database.Migrate();
+        else db.Database.EnsureCreated();
     }
 
     /// <summary>Runs one request against a function class, in its own DI scope (like one invocation).</summary>
@@ -156,7 +193,12 @@ public sealed class TestApp : IDisposable
 
     public void Dispose()
     {
+        if (_postgres)
+        {
+            using var scope = Services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<BaytakDbContext>().Database.EnsureDeleted();
+        }
         Services.Dispose();
-        _connection.Dispose();
+        _connection?.Dispose();
     }
 }

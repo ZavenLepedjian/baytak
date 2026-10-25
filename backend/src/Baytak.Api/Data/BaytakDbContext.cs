@@ -8,6 +8,9 @@ public class BaytakDbContext : DbContext
 {
     public BaytakDbContext(DbContextOptions<BaytakDbContext> options) : base(options) { }
 
+    /// <summary>For provider-specific subclasses (<see cref="PostgresDbContext"/>), which carry their own migrations.</summary>
+    protected BaytakDbContext(DbContextOptions options) : base(options) { }
+
     public DbSet<User> Users => Set<User>();
     public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
     public DbSet<Building> Buildings => Set<Building>();
