@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Baytak Reel: No Passwords</title>
+<link rel="stylesheet" href="kit.css">
+<style>
+#h1 { top: 200px; animation: rise .5s var(--e-out) .1s both; }
+#say1 { top: 410px; animation: rise .5s var(--e-out) .3s both, sink .3s var(--e-in) 4.75s forwards; }
+#say2 { top: 410px; animation: rise .5s var(--e-out) 5.05s both; }
+#ph { --py: 560px; animation: phoneUp .7s var(--e-out) .35s both; }
+/* Login */
+#scrLogin { background: linear-gradient(180deg, #05302E 0%, #00847C 70%); animation: pushOut .35s var(--e-out) 2.55s forwards; }
+.lg-top { position: absolute; top: 79px; left: 0; right: 0; text-align: center; color: #fff; }
+.lg-top .wm { font-size: 40px; line-height: 48px; font-weight: 700; }
+.lg-top .tg { margin-top: 4px; color: rgba(255,255,255,.85); }
+.lg-sheet { position: absolute; left: 0; right: 0; bottom: 0; top: 445px; background: #fff; border-radius: 18px 18px 0 0; padding: 24px; }
+.lg-sheet .intro { margin: 4px 0 24px; color: var(--text-muted); }
+#cont { margin-top: 24px; animation: press .3s ease 2.3s; }
+.lg-sheet .ghost { margin-top: 12px; height: 44px; font-size: 15px; }
+#tapCont { left: 195px; top: 704px; --d: 2.3s; }
+/* Verification */
+#scrCode { animation: pushIn .35s var(--e-out) 2.55s both, pushOut .35s var(--e-out) 4.7s forwards; }
+.vc { position: absolute; top: 71px; left: 16px; right: 16px; }
+.vc .chg { display: flex; align-items: center; gap: 2px; color: var(--ink); font-weight: 600; }
+.vc .chg .ico { font-size: 24px; }
+.vc .circle { margin-top: 16px; width: 72px; height: 72px; border-radius: 50%; background: var(--ink-soft); color: var(--ink); display: grid; place-items: center; font-size: 34px; }
+.vc .sent { margin: 6px 0 24px; color: var(--text-muted); }
+.vc .sent b { color: var(--text); font-weight: 600; }
+.cells { display: flex; justify-content: space-between; }
+.cells span { width: 50px; height: 58px; border: 1.5px solid var(--border-input); border-radius: 8px; display: grid; place-items: center; font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cells span.focus { border-color: var(--ink); }
+#verify { margin-top: 24px; animation: press .3s ease 4.25s; }
+#verify .spin { position: absolute; width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff; opacity: 0; animation: show .4s 4.3s, spin .7s linear 4.3s infinite; }
+#verify .lbl { animation: hide .4s 4.3s; }
+.resend { margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-muted); }
+.resend b { color: var(--ink); font-weight: 600; opacity: .45; }
+#tapVerify { left: 195px; top: 388px; --d: 4.25s; }
+#sms { position: absolute; z-index: 50; top: 52px; left: 10px; right: 10px; animation: toastIn .35s var(--e-out) 2.95s both, sinkUp .3s var(--e-in) 3.95s forwards; }
+@keyframes sinkUp { to { opacity: 0; transform: translateY(-120%) } }
+#sms .appicon.chat { background: #3CB55A; }
+/* Home */
+#scrHome { animation: pushIn .35s var(--e-out) 4.7s both; }
+.band { background: var(--ink); padding: 59px 16px 16px; display: flex; align-items: center; gap: 12px; }
+.home { padding: 16px; }
+.home .done { font-size: 32px; line-height: 40px; font-weight: 700; }
+.home .nd { margin-top: 4px; color: var(--text-muted); }
+.prow { display: flex; align-items: center; gap: 12px; padding: 12px 16px; min-height: 56px; }
+.prow .grow { flex: 1; }
+.stamp.sm { border-width: 1.5px; padding: 2px 6px; font-size: 12px; }
+.stamp.sm .ico { font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage" style="--end: 8s" role="img" aria-label="Reel: No passwords to forget. A phone number is typed, a 6-digit code arrives by text and fills in, and the resident is signed in to a home screen that says You're all paid up.">
+  <h2 class="hook" id="h1">No passwords <em>to forget.</em></h2>
+  <p class="say" id="say1">Your phone number <b>is your account.</b></p>
+  <p class="say" id="say2">One text code and <b>you're in.</b></p>
+  <div class="phone" id="ph">
+    <div class="phone-in"><div class="screen">
+      <div class="island"></div>
+      <div class="scr" id="scrLogin">
+        <div class="sbL"></div>
+        <div class="lg-top"><div class="wm">Baytak</div><div class="tg">Building fees, made clear.</div></div>
+        <div class="lg-sheet">
+          <div class="t-title">Welcome</div>
+          <div class="intro">Enter your phone number and we'll text you a verification code.</div>
+          <div class="field" id="phoneField"><div class="lbl">Phone number</div><div class="box"><svg class="ico"><use href="#i-call"/></svg><span class="val"></span><span class="caret"></span><span class="ph">e.g. 03 123 456</span></div></div>
+          <div class="btn primary" id="cont">Continue</div>
+          <div class="btn ghost">Managing a building? Request admin access</div>
+        </div>
+        <div class="tap" id="tapCont"></div>
+      </div>
+      <div class="scr" id="scrCode">
+        <div class="sbD"></div>
+        <div class="vc">
+          <div class="chg"><svg class="ico"><use href="#i-back"/></svg>Change number</div>
+          <div class="circle"><svg class="ico"><use href="#i-chatdots"/></svg></div>
+          <div class="t-title" style="margin-top:16px">Enter verification code</div>
+          <div class="sent">We sent a 6-digit code to <b>03 123 456</b>.</div>
+          <div class="cells" id="cells"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="btn primary" id="verify"><span class="lbl">Verify</span><span class="spin"></span></div>
+          <div class="resend">Didn't get a code? <b>Resend in 24s</b></div>
+        </div>
+        <div class="tap" id="tapVerify"></div>
+        <div id="sms"><div class="notif"><div class="appicon chat"><svg class="ico"><use href="#i-chat"/></svg></div><div class="nt"><div class="nt-top"><span>Messages</span><span>now</span></div><div>Your Baytak verification code is 482917. It expires in 5 minutes.</div></div></div></div>
+      </div>
+      <div class="scr" id="scrHome">
+        <div class="sbL"></div>
+        <div class="band">
+          <div class="plate paper lg">3B</div>
+          <div><div class="t-heading" style="color:#fff">Cedar Residence</div><div class="t-cap" style="color:rgba(255,255,255,.85)">3rd floor</div></div>
+        </div>
+        <div class="home">
+          <div class="done">You're all paid up</div>
+          <div class="nd">Nothing is due. Your last payment was recorded on Oct 1, 2026.</div>
+          <div class="t-heading" style="margin:24px 0 8px">Paid recently</div>
+          <div class="card">
+            <div class="prow"><div class="grow"><div class="t-bs">Oct 1, 2026</div><div class="t-cap muted">75 USD</div></div><span class="stamp paid sm"><svg class="ico"><use href="#i-done"/></svg>Paid</span></div>
+            <div class="div" style="margin-left:16px"></div>
+            <div class="prow"><div class="grow"><div class="t-bs">Sep 1, 2026</div><div class="t-cap muted">2,225,000 LBP</div></div><span class="stamp paid sm"><svg class="ico"><use href="#i-done"/></svg>Paid</span></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</div>
+<script src="kit.js"></script>
+<script>
+(() => {
+  document.querySelectorAll('.sbL').forEach((el) => { el.outerHTML = Kit.statusBar('9:41', true); });
+  document.querySelectorAll('.sbD').forEach((el) => { el.outerHTML = Kit.statusBar('9:41', false); });
+  const field = document.getElementById('phoneField'), val = field.querySelector('.val');
+  const typed = ['0', '03', '03 1', '03 12', '03 123', '03 123 4', '03 123 45', '03 123 456'];
+  const typeAt = typed.map((_, i) => 1.15 + i * 0.11);
+  const code = '482917';
+  const codeAt = [...code].map((_, i) => 3.45 + i * 0.09);
+  const cells = [...document.querySelectorAll('#cells span')];
+  const verify = document.getElementById('verify');
+
+  window.__sfx = [...typeAt.map((a) => [a, 'key']), ...codeAt.map((a) => [a, 'key'])]; // sound cues
+  Kit.init({
+    title: 'Baytak Reel: no passwords',
+    duration: 11,
+    update(t) {
+      let v = '';
+      typeAt.forEach((a, i) => { if (t >= a) v = typed[i]; });
+      val.textContent = v;
+      field.classList.toggle('filled', v !== '');
+      field.classList.toggle('focus', t >= 1.0 && t < 2.3);
+      const n = codeAt.filter((a) => t >= a).length;
+      cells.forEach((c, i) => {
+        c.textContent = i < n ? code[i] : '';
+        c.classList.toggle('focus', i === n && t >= 2.6 && n < 6);
+      });
+      verify.classList.toggle('off', n < 6);
+    },
+  });
+})();
+</script>
+</body>
+</html>

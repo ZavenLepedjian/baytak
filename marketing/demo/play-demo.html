@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Baytak Play demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<style>
+/* Viewer chrome: a quiet screening room around one 9:16 stage. The stage itself is fixed (it is the ad). */
+:root {
+  --page: #E1EAE9;
+  --page-ink: #05302E;
+  --page-muted: #3F5654;
+  --page-rule: #A9BDBB;
+  --ctl: #FFFFFF;
+  --ctl-ink: #00847C;
+  --ctl-on: #00847C;
+  --ctl-on-ink: #FFFFFF;
+  --font: "IBM Plex Sans Arabic", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #031A19; --page-ink: #EAF6F5; --page-muted: #A9BDBB; --page-rule: #1F5552;
+    --ctl: #006B65; --ctl-ink: #D3EFEC; --ctl-on: #D3EFEC; --ctl-on-ink: #05302E; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #031A19; --page-ink: #EAF6F5; --page-muted: #A9BDBB; --page-rule: #1F5552;
+  --ctl: #006B65; --ctl-ink: #D3EFEC; --ctl-on: #D3EFEC; --ctl-on-ink: #05302E; color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--page); color: var(--page-ink); font-family: var(--font); }
+.viewer { min-height: 100%; display: flex; flex-direction: column; align-items: center; gap: 14px; padding-block: 16px; padding-inline: 16px; box-sizing: border-box; }
+.top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.top h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: 0; }
+.top p { margin: 0; font-size: 13px; color: var(--page-muted); }
+.stage-wrap { position: relative; flex: none; border-radius: 10px; overflow: hidden; box-shadow: 0 12px 40px rgba(5,48,46,.22); }
+.controls, .top, .chapters { width: var(--w, 360px); max-width: 100%; box-sizing: border-box; }
+.controls { display: flex; align-items: center; gap: 10px; }
+.controls button { flex: none; width: 40px; height: 40px; border-radius: 8px; border: 1.5px solid var(--page-rule); background: var(--ctl); color: var(--ctl-ink); display: grid; place-items: center; cursor: pointer; }
+.controls button:focus-visible, .chapters button:focus-visible, #scrub:focus-visible { outline: 2px solid var(--ctl-ink); outline-offset: 2px; }
+.controls svg { width: 18px; height: 18px; }
+#scrub { flex: 1; min-width: 0; accent-color: var(--ctl-ink); height: 40px; margin: 0; }
+.clock { flex: none; font-size: 13px; color: var(--page-muted); font-variant-numeric: tabular-nums; min-width: 78px; text-align: end; }
+.chapters { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.chapters button { font: 600 12px/1 var(--font); letter-spacing: .2px; padding: 8px 10px; border-radius: 6px; border: 1.5px solid var(--page-rule); background: transparent; color: var(--page-muted); cursor: pointer; }
+.chapters button[aria-current="true"] { background: var(--ctl-on); border-color: var(--ctl-on); color: var(--ctl-on-ink); }
+
+/* Export mode: the stage alone at 1080x1920, for frame capture. */
+html.export, html.export body { background: #05302E; padding: 0 !important; margin: 0; overflow: hidden; }
+html.export .viewer { padding: 0; gap: 0; }
+html.export .top, html.export .controls, html.export .chapters { display: none; }
+html.export .stage-wrap { border-radius: 0; box-shadow: none; }
+
+/* ======================================================================
+   THE AD. Tokens are the app's theme.ts, unchanged. The stage is a fixed
+   1080x1920 canvas; phone screens are built at 390x844 app points and
+   scaled, so 16px body text and 52px fields are the app's own metrics.
+   ====================================================================== */
+.stage {
+  --ink: #00847C; --ink-dark: #006B65; --ink-deep: #05302E; --ink-soft: #D3EFEC; --ink-tint: #EAF6F5;
+  --paper: #EEF4F3; --slip: #FFFFFF; --paper-muted: #E1EAE9; --rule: #D0DDDC; --rule-strong: #A9BDBB;
+  --border-input: #6F8583; --text: #0B2625; --text-muted: #3F5654; --text-faint: #5B706E;
+  --verdigris: #2E6B1F; --verdigris-wash: #E3F1DB; --vermilion: #B3321B; --vermilion-wash: #FBE3DC;
+  --brass: #B8913F; --plate-text: #F2FBFA;
+  --logo: url("../../assets/adaptive-icon.png");
+  --e-out: cubic-bezier(.16, 1, .3, 1);
+  --e-in: cubic-bezier(.55, 0, .75, .2);
+  --e-io: cubic-bezier(.65, 0, .35, 1);
+  position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden;
+  transform-origin: 0 0; background: var(--paper); color: var(--text);
+  font-family: var(--font); -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;
+}
+.stage, .stage * { box-sizing: border-box; animation-play-state: paused !important; }
+.stage .layer { position: absolute; inset: 0; }
+.ico { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.num { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ---------- keyframes ---------- */
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes fadeOut { from { opacity: 1 } to { opacity: 0 } }
+@keyframes rise { from { opacity: 0; transform: translateY(var(--dy, 44px)) } to { opacity: 1; transform: none } }
+@keyframes sink { from { opacity: 1; transform: none } to { opacity: 0; transform: translateY(calc(var(--dy, 44px) * -.6)) } }
+@keyframes gone { to { visibility: hidden } }
+@keyframes show { from { opacity: 1 } to { opacity: 1 } }
+@keyframes hide { from { opacity: 0 } to { opacity: 0 } }
+@keyframes spin { to { transform: rotate(360deg) } }
+@keyframes blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
+@keyframes pop {
+  0% { opacity: 0; transform: translateY(30px) scale(.7) rotate(var(--r, 0deg)) }
+  55% { opacity: 1; transform: translateY(-4px) scale(1.03) rotate(var(--r, 0deg)) }
+  100% { opacity: 1; transform: scale(1) rotate(var(--r, 0deg)) }
+}
+@keyframes recede { to { transform: scale(.93); opacity: .35 } }
+@keyframes slipUp { from { transform: translateY(1300px) } to { transform: none } }
+@keyframes stemDrop {
+  0% { opacity: 0; transform: translateY(-520px) }
+  20% { opacity: 1 }
+  68% { transform: translateY(12px) }
+  84% { transform: translateY(-3px) }
+  100% { opacity: 1; transform: none }
+}
+/* The app's Stamp settle: fades in over 120ms and springs from 1.45x to 1. */
+@keyframes bowlStamp {
+  0% { opacity: 0; transform: scale(1.45) rotate(-7deg) }
+  18% { opacity: 1 }
+  42% { transform: scale(.95) rotate(1deg) }
+  64% { transform: scale(1.02) rotate(0deg) }
+  82% { transform: scale(.995) }
+  100% { opacity: 1; transform: none }
+}
+@keyframes toCorner { from { transform: none } to { transform: translate(-433.6px, -444px) scale(.187) } }
+@keyframes toCenter { from { transform: translate(-433.6px, -444px) scale(.187) } to { transform: none } }
+@keyframes phoneUp { from { transform: translateY(1200px) } to { transform: none } }
+@keyframes phoneDown { from { transform: none } to { transform: translateY(1200px) } }
+@keyframes outLeft { from { transform: none } to { transform: translateX(-1150px) rotate(-4deg) } }
+@keyframes inLeft { from { transform: translateX(-1150px) rotate(-4deg) } to { transform: none } }
+@keyframes inRight { from { transform: translateX(1150px) rotate(4deg) } to { transform: none } }
+@keyframes outRight { from { transform: none } to { transform: translateX(1150px) rotate(4deg) } }
+@keyframes sheetUp { from { transform: translateY(100%) } to { transform: none } }
+@keyframes sheetDown { from { transform: none } to { transform: translateY(100%) } }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-120%) } to { opacity: 1; transform: none } }
+@keyframes tap {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.45) }
+  25% { opacity: 1; transform: translate(-50%, -50%) scale(1) }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.55) }
+}
+@keyframes press { 0%, 100% { filter: none; transform: none } 30%, 60% { filter: brightness(.78); transform: scale(.985) } }
+@keyframes notifIn { from { opacity: 0; transform: translateY(36px) scale(.94) } to { opacity: 1; transform: none } }
+@keyframes appOpen { from { opacity: 0; transform: scale(.88); border-radius: 40px } 35% { opacity: 1 } to { opacity: 1; transform: none; border-radius: 0 } }
+@keyframes printIn {
+  from { clip-path: inset(-20px -20px 100% -20px); transform: translateY(-10px) }
+  to { clip-path: inset(-20px -20px -20px -20px); transform: none }
+}
+@keyframes plateSettle {
+  0% { opacity: 0; transform: scale(1.18) }
+  12% { opacity: 1 }
+  45% { transform: scale(.96) }
+  70% { transform: scale(1.012) }
+  100% { opacity: 1; transform: scale(1) }
+}
+@keyframes cardIn { from { opacity: 0; transform: translateX(140px) } to { opacity: 1; transform: none } }
+
+/* ---------- Scene 1: the group chat ---------- */
+#s1 { background: var(--ink-deep); animation: recede .8s var(--e-in) 3.4s forwards, gone .01s 4.25s forwards; }
+#s1 .hook { position: absolute; left: 130px; top: 230px; width: 760px; margin: 0; font-size: 104px; line-height: 1.04; font-weight: 700; color: #fff; letter-spacing: -1px; text-wrap: balance; }
+#s1 .hook em { font-style: normal; color: var(--ink-soft); }
+.chat-head { position: absolute; left: 130px; top: 700px; display: flex; align-items: center; gap: 18px; color: rgba(255,255,255,.85); font-size: 34px; font-weight: 600; animation: rise .4s var(--e-out) .2s both; }
+.chat-head .av { width: 64px; height: 64px; border-radius: 50%; background: var(--ink); display: grid; place-items: center; font-size: 36px; color: var(--ink-soft); }
+.chat-head .unread { margin-inline-start: 6px; padding: 6px 14px; border-radius: 8px; background: rgba(255,255,255,.14); color: #fff; font-size: 28px; font-variant-numeric: tabular-nums; }
+.bubble { position: absolute; max-width: 450px; padding: 18px 24px 20px; background: #fff; border-radius: 14px; box-shadow: 0 14px 34px rgba(0,0,0,.35); animation: pop .42s var(--e-out) var(--d) both; transform-origin: 0 100%; }
+.bubble .b-top { display: flex; justify-content: space-between; gap: 24px; font-size: 24px; line-height: 1.2; }
+.bubble .b-from { color: var(--ink); font-weight: 700; }
+.bubble .b-time { color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.bubble .b-text { font-size: 34px; line-height: 1.28; color: var(--text); margin-top: 6px; }
+
+/* ---------- The torn receipt slip that wipes the chat away ---------- */
+#slip { top: -34px; bottom: -40px; background: #fff; animation: slipUp .8s var(--e-io) 3.4s both, fadeOut .5s ease 8s forwards, fadeIn .4s ease 26.8s forwards; filter: drop-shadow(0 -14px 30px rgba(0,0,0,.28)); }
+#slip::before { content: ""; position: absolute; left: 0; right: 0; top: -33px; height: 34px;
+  background: linear-gradient(-45deg, #fff 17px, transparent 0) 0 100% / 34px 34px repeat-x, linear-gradient(45deg, #fff 17px, transparent 0) 0 100% / 34px 34px repeat-x; }
+
+/* ---------- Logo: the project's own file, split along its gap into stem and bowl ---------- */
+#logo { position: absolute; left: 203px; top: 246px; width: 600px; height: 600px; transform-origin: 317px 294px; animation: toCorner .75s var(--e-io) 7.8s forwards, toCenter .8s var(--e-io) 26.9s forwards; }
+#logo .part { position: absolute; inset: 0; background: var(--logo) center / 100% 100% no-repeat; }
+#logo .stem { clip-path: polygon(29.30% 11.72%, 45.51% 11.72%, 45.51% 35.25%, 45.02% 35.64%, 44.43% 35.94%, 42.97% 36.52%, 41.02% 37.60%, 39.06% 39.06%, 37.11% 40.92%, 35.16% 43.26%, 33.69% 45.90%, 33.01% 47.56%, 29.30% 49.32%); animation: stemDrop .62s var(--e-out) 4.3s both; }
+#logo .bowl { clip-path: polygon(45.51% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 49.32%, 29.30% 49.32%, 33.01% 47.56%, 33.69% 45.90%, 35.16% 43.26%, 37.11% 40.92%, 39.06% 39.06%, 41.02% 37.60%, 42.97% 36.52%, 44.43% 35.94%, 45.02% 35.64%, 45.51% 35.25%); transform-origin: 52.8% 58.8%; animation: bowlStamp .7s linear 4.7s both; }
+#bugWord { position: absolute; left: 124px; top: 64px; font-size: 46px; line-height: 64px; font-weight: 700; color: var(--ink-deep); letter-spacing: -.3px; animation: fadeIn .4s ease 8.35s both, fadeOut .25s ease 26.7s forwards; }
+
+/* ---------- Brand lockup (scene 2 and the end card) ---------- */
+.brand { position: absolute; left: 760px; right: 0; text-align: left; margin: 0; }
+.brand.wm { top: 330px; font-size: 170px; line-height: 1.1; font-weight: 700; color: var(--ink-deep); letter-spacing: -2px; animation: rise .6s var(--e-out) 5.35s both, sink .4s var(--e-in) 7.7s forwards, rise .6s var(--e-out) 27.5s forwards; }
+.brand.ar { top: 545px; font-size: 42px; line-height: 64px; color: var(--text-muted); animation: rise .6s var(--e-out) 5.65s both, sink .4s var(--e-in) 7.74s forwards, rise .6s var(--e-out) 27.7s forwards; }
+.brand.ar bdi { font-size: 56px; font-weight: 700; color: var(--ink); vertical-align: -4px; }
+.brand.tag { top: 650px; font-size: 58px; line-height: 1.2; font-weight: 600; color: var(--ink); animation: rise .6s var(--e-out) 5.95s both, sink .4s var(--e-in) 7.78s forwards, rise .6s var(--e-out) 27.9s forwards; }
+.cta { position: absolute; left: 50%; top: 1280px; transform: translateX(-50%); }
+.cta > div { display: flex; align-items: center; gap: 22px; height: 128px; padding: 0 60px; border-radius: 14px; background: var(--ink); color: #fff; font-size: 44px; font-weight: 600; white-space: nowrap; animation: rise .6s var(--e-out) 28.3s both; }
+.cta .ico { font-size: 50px; stroke-width: 1.6; }
+.platforms { position: absolute; left: 0; right: 0; top: 1452px; text-align: center; font-size: 34px; color: var(--text-muted); animation: rise .6s var(--e-out) 28.5s both; }
+#endFade { background: var(--ink-deep); animation: fadeIn .45s ease 30.55s both; }
+
+/* ---------- Captions for the phone scenes ---------- */
+.cap { position: absolute; left: 130px; top: 290px; width: 840px; }
+.cap > * { --dy: 36px; }
+.cap .eb { display: flex; align-items: center; gap: 14px; font-size: 34px; line-height: 44px; font-weight: 600; color: var(--ink); }
+.cap .eb .ico { font-size: 40px; }
+.cap .hl { margin: 14px 0 0; font-size: 100px; line-height: 106px; font-weight: 700; letter-spacing: -1px; color: var(--text); }
+.cap .sub { text-wrap: balance; margin: 20px 0 0; font-size: 40px; line-height: 52px; color: var(--text-muted); }
+#capA .eb { animation: rise .5s var(--e-out) 8.55s both, sink .35s var(--e-in) 13.35s forwards; }
+#capA .hl { animation: rise .5s var(--e-out) 8.7s both, sink .35s var(--e-in) 13.38s forwards; }
+#capA .sub { animation: rise .5s var(--e-out) 8.85s both, sink .35s var(--e-in) 13.41s forwards; }
+#capB .eb { animation: rise .5s var(--e-out) 13.7s both, sink .35s var(--e-in) 18.25s forwards; }
+#capB .hl { animation: rise .5s var(--e-out) 13.85s both, sink .35s var(--e-in) 18.28s forwards; }
+#capB .sub { animation: rise .5s var(--e-out) 14s both, sink .35s var(--e-in) 18.31s forwards; }
+#capC .eb { animation: rise .5s var(--e-out) 18.6s both, sink .35s var(--e-in) 23.25s forwards; }
+#capC .hl { animation: rise .5s var(--e-out) 18.75s both, sink .35s var(--e-in) 23.28s forwards; }
+#capC .sub { animation: rise .5s var(--e-out) 18.9s both, sink .35s var(--e-in) 23.31s forwards; }
+
+/* ---------- Phone ---------- */
+.phone { position: absolute; left: 1250px; top: 64px; width: 451px; height: 950px; }
+#phA { animation: phoneUp .75s var(--e-out) 8.65s both, outRight .5s var(--e-in) 13.45s forwards, inRight .6s var(--e-out) 18.55s forwards, phoneDown .5s var(--e-in) 23.3s forwards; }
+#phR { animation: inRight .6s var(--e-out) 13.6s both, outRight .5s var(--e-in) 18.25s forwards; }
+.phone-in { width: 410px; height: 864px; transform: scale(1.1); transform-origin: 0 0; padding: 10px; border-radius: 62px; background: #07201F;
+  box-shadow: inset 0 0 0 2px #1D4B48, 0 24px 50px rgba(5,48,46,.26), 0 6px 14px rgba(5,48,46,.16); }
+.screen { position: relative; width: 390px; height: 844px; border-radius: 52px; overflow: hidden; background: var(--paper); font-size: 16px; line-height: 23px; }
+.island { position: absolute; z-index: 60; top: 11px; left: 50%; width: 120px; height: 35px; margin-left: -60px; border-radius: 20px; background: #000; }
+.scr { position: absolute; inset: 0; background: var(--paper); }
+.sb { position: absolute; z-index: 40; top: 0; left: 0; right: 0; height: 47px; display: flex; align-items: center; justify-content: space-between; padding: 6px 30px 0 40px; font-size: 16px; font-weight: 600; color: var(--text); }
+.sb.light { color: #fff; }
+.sb .sbi { display: flex; align-items: center; gap: 6px; }
+.sb .sbi svg { height: 12px; fill: currentColor; }
+.sb .batt { width: 25px; height: 12px; border: 1.4px solid currentColor; border-radius: 4px; padding: 1.5px; opacity: .95; position: relative; }
+.sb .batt::after { content: ""; position: absolute; right: -4px; top: 3.5px; width: 2px; height: 4px; border-radius: 0 2px 2px 0; background: currentColor; }
+.sb .batt i { display: block; height: 100%; width: 78%; border-radius: 2px; background: currentColor; }
+
+.t-title { font-size: 22px; line-height: 30px; font-weight: 700; }
+.t-heading { font-size: 17px; line-height: 24px; font-weight: 600; }
+.t-bs { font-size: 16px; line-height: 23px; font-weight: 600; }
+.t-cap { font-size: 14px; line-height: 20px; }
+.muted { color: var(--text-muted); }
+.card { background: var(--slip); border-radius: 10px; box-shadow: 0 2px 5px rgba(5,48,46,.08); }
+.div { height: 1px; background: var(--rule); }
+.btn { height: 52px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 600; position: relative; }
+.btn .ico { font-size: 20px; }
+.btn.primary { background: var(--ink); color: #fff; }
+.btn.secondary { background: var(--ink-soft); color: var(--ink-deep); }
+.tap { position: absolute; z-index: 45; width: 64px; height: 64px; border-radius: 50%; background: rgba(5,48,46,.18); box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 0 0 5px rgba(5,48,46,.25); opacity: 0; animation: tap .55s var(--e-out) var(--d) both; pointer-events: none; }
+
+/* New receipt (admin) */
+.nav { position: absolute; top: 47px; left: 0; right: 0; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--text); }
+.nav .back { position: absolute; left: 10px; top: 8px; font-size: 28px; color: var(--ink); }
+.nr { position: absolute; top: 99px; left: 16px; right: 16px; display: flex; flex-direction: column; gap: 16px; }
+.banner { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; background: var(--ink-tint); border: 1px solid var(--ink-soft); }
+.banner .ico { font-size: 19px; color: var(--ink); margin-top: 1px; }
+.fields { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.field .lbl { font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+.field .box { height: 52px; border: 1.5px solid var(--border-input); border-radius: 8px; padding: 0 14px; display: flex; align-items: center; gap: 10px; background: #fff; }
+.field .box .ico { font-size: 20px; color: var(--text-muted); }
+.field .ph { color: var(--text-faint); }
+.field .val { font-variant-numeric: tabular-nums; }
+.field .caret { width: 2px; height: 22px; margin-left: -8px; background: var(--ink); display: none; animation: blink 1s steps(1) infinite; }
+.field.focus .box { border-color: var(--ink); }
+.field.focus .caret { display: block; }
+.field.filled .ph { display: none; }
+.lrow { display: flex; align-items: center; gap: 12px; padding: 12px 16px; min-height: 64px; }
+.lrow .tile { width: 36px; height: 36px; border-radius: 8px; background: var(--ink-soft); color: var(--ink); display: grid; place-items: center; font-size: 20px; }
+.lrow .grow { flex: 1; }
+.lrow > .ico { color: var(--text-faint); font-size: 18px; }
+.total { display: flex; align-items: center; justify-content: space-between; padding: 16px; border-radius: 10px; background: var(--ink-tint); color: var(--ink-deep); }
+#addBtn { margin-top: 8px; animation: press .3s ease 11.25s; }
+#tapAdd { left: 195px; top: 699px; --d: 11.25s; }
+#backdrop { position: absolute; inset: 0; background: rgba(5,48,46,.5); z-index: 30; animation: fadeIn .28s ease 11.45s both, fadeOut .18s ease 12.65s forwards; }
+#sheet { position: absolute; z-index: 31; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 14px 14px 0 0; padding: 0 16px 50px; animation: sheetUp .28s var(--e-out) 11.45s both, sheetDown .18s var(--e-in) 12.65s forwards; }
+#sheet .handle { height: 44px; display: grid; place-items: center; }
+#sheet .handle i { width: 40px; height: 4px; border-radius: 2px; background: var(--rule-strong); }
+#sheet .msg { margin-top: 8px; color: var(--text-muted); }
+#sheet .row { display: flex; gap: 12px; margin-top: 24px; }
+#sheet .row .btn { flex: 1; }
+#confirmBtn { animation: press .3s ease 12.15s; }
+#confirmBtn .lbl { animation: hide .45s 12.2s; }
+#confirmBtn .spin { position: absolute; width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff; opacity: 0; animation: show .45s 12.2s, spin .7s linear 12.2s infinite; }
+#tapConfirm { left: 287px; top: 768px; --d: 12.15s; }
+#toast { position: absolute; z-index: 35; top: 55px; left: 12px; right: 12px; min-height: 52px; padding: 12px 14px; border-radius: 10px; background: var(--verdigris); color: #fff; display: flex; align-items: center; gap: 10px; font-weight: 600; box-shadow: 0 6px 12px rgba(5,48,46,.16); animation: toastIn .22s var(--e-out) 12.85s both, fadeOut .2s ease 13.95s forwards; }
+#toast .ico { font-size: 22px; }
+
+/* Lock screen and notification (resident) */
+#scrLock { background: radial-gradient(120% 70% at 20% 0%, #1AA79D 0%, transparent 60%), linear-gradient(170deg, #00847C 0%, #05302E 75%); }
+.lk-date { position: absolute; top: 96px; left: 0; right: 0; text-align: center; color: rgba(255,255,255,.88); font-size: 20px; font-weight: 600; }
+.lk-time { position: absolute; top: 118px; left: 0; right: 0; text-align: center; color: #fff; font-size: 92px; line-height: 1; font-weight: 600; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
+#notif { position: absolute; top: 300px; left: 10px; right: 10px; padding: 13px 14px; border-radius: 22px; background: rgba(255,255,255,.9); display: flex; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); animation: notifIn .45s var(--e-out) 14.35s both, press .3s ease 15.15s; }
+#notif .appicon { width: 40px; height: 40px; flex: none; border-radius: 10px; background: #fff var(--logo) center / 112% no-repeat; box-shadow: inset 0 0 0 1px rgba(5,48,46,.12); }
+#notif .nt { flex: 1; min-width: 0; font-size: 15px; line-height: 20px; color: #05302E; }
+#notif .nt-top { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); }
+#notif b { font-weight: 600; }
+#tapNotif { left: 195px; top: 352px; --d: 15.15s; }
+
+/* Home (resident) */
+#scrHome { transform-origin: 50% 38%; animation: appOpen .38s var(--e-out) 15.35s both; }
+.band { background: var(--ink); padding: 59px 16px 16px; display: flex; align-items: center; gap: 12px; }
+.plate { position: relative; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1.5px solid var(--ink-deep); background: var(--ink); color: var(--plate-text); font-weight: 700; font-variant-numeric: tabular-nums; }
+.plate::before { content: ""; position: absolute; inset: 3px; border: 1px solid var(--brass); border-radius: 4px; }
+.plate.paper { background: #fff; border-color: var(--ink); color: var(--ink-deep); }
+.plate.paper::before { border-color: var(--rule-strong); }
+.plate.lg { min-width: 76px; height: 58px; padding: 0 12px; font-size: 30px; line-height: 36px; }
+.home { padding: 16px; display: flex; flex-direction: column; }
+.home > * { --dy: 14px; }
+.verdict div { font-size: 30px; line-height: 40px; color: var(--text-muted); white-space: nowrap; }
+.verdict .num { font-size: 34px; color: var(--text); }
+.verdict .cur { font-weight: 600; }
+#v1 { animation: rise .4s var(--e-out) 15.6s both; }
+#v2 { animation: rise .4s var(--e-out) 15.75s both; }
+.slipcard .st { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; }
+.slipcard .sb2 { padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; }
+.slipcard .line { display: flex; justify-content: space-between; gap: 12px; }
+.slipcard .line .num { font-weight: 400; }
+.slipcard .tot { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; }
+.slipcard .tot .num { font-size: 20px; line-height: 28px; }
+#slip1 { margin-top: 16px; animation: printIn .55s var(--e-out) 15.9s both; }
+#slip2 { margin-top: 12px; animation: printIn .55s var(--e-out) 16.1s both; }
+#paidSec { margin-top: 24px; animation: rise .4s var(--e-out) 16.3s both; }
+.stamp { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 2px solid; border-radius: 4px; transform: rotate(-3deg); font-size: 13px; line-height: 16px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.stamp .ico { font-size: 16px; stroke-width: 2.2; }
+.stamp.unpaid { color: var(--vermilion); background: var(--vermilion-wash); border-color: var(--vermilion); }
+.stamp.paid { color: var(--verdigris); background: var(--verdigris-wash); border-color: var(--verdigris); }
+.stamp.sm { border-width: 1.5px; padding: 2px 6px; font-size: 12px; }
+.stamp.sm .ico { font-size: 13px; }
+.prow { display: flex; align-items: center; gap: 12px; padding: 12px 16px; min-height: 56px; }
+.prow .grow { flex: 1; }
+
+/* Collect (admin) */
+#scrCollect { opacity: 0; animation: show .01s 16s forwards; }
+#scrNew { animation: gone .01s 16s forwards; }
+.band.nav-band { height: 91px; padding: 47px 0 0; justify-content: center; color: #fff; }
+.col { padding: 16px; }
+.switcher { display: flex; align-items: center; gap: 8px; min-height: 56px; margin-top: 16px; padding: 8px 12px; background: #fff; border-radius: 10px; border: 1px solid var(--rule); }
+.switcher .grow { flex: 1; }
+.switcher .ico { font-size: 18px; color: var(--ink); }
+.actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.chip { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 12px; border-radius: 8px; border: 1.5px solid var(--ink); color: var(--ink); font-weight: 600; }
+.chip .ico { font-size: 16px; }
+#remind { flex: 1; height: 44px; font-size: 15px; }
+#remind.off { opacity: .45; }
+.floor { margin-top: 24px; }
+.floor h4 { margin: 0 0 8px; font-size: 17px; line-height: 24px; font-weight: 600; }
+.grid { display: flex; gap: 10px; }
+.cell { position: relative; width: 82px; height: 74px; }
+.cell .plate { position: absolute; left: 0; top: 0; width: 82px; height: 48px; font-size: 24px; line-height: 30px; }
+.cell .plate.paper { border-color: var(--verdigris); }
+.cell .plate.paper.anim { animation: plateSettle .5s linear var(--d) both; }
+.cell .pc { position: absolute; left: 0; right: 0; top: 52px; height: 22px; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 13px; line-height: 18px; font-weight: 700; }
+.cell .pc .ico { font-size: 15px; stroke-width: 2.2; }
+.cell .pc.unpaid { color: var(--vermilion); }
+.cell .pc.paid { color: var(--verdigris); }
+.cell .pc.unpaid.anim { animation: fadeOut .12s ease var(--d) forwards; }
+.cell .pc.paid.anim { animation: fadeIn .15s ease var(--d) both; }
+.cell .tap { left: 41px; top: 24px; }
+
+/* ---------- Scene 6: what makes it trustworthy ---------- */
+#s6 .hl { position: absolute; left: 130px; top: 190px; width: 1660px; margin: 0; font-size: 96px; line-height: 102px; font-weight: 700; letter-spacing: -1px; animation: rise .5s var(--e-out) 23.8s both, sink .35s var(--e-in) 26.5s forwards; }
+.feats { position: absolute; left: 130px; right: 130px; top: 450px; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.feat { display: flex; gap: 28px; align-items: flex-start; padding: 34px; background: #fff; border-radius: 16px; box-shadow: 0 4px 10px rgba(5,48,46,.08); animation: cardIn .55s var(--e-out) var(--d) both, sink .35s var(--e-in) var(--o) forwards; }
+.feat .tile { width: 92px; height: 92px; flex: none; border-radius: 14px; background: var(--ink-soft); color: var(--ink); display: grid; place-items: center; font-size: 48px; }
+.feat .tile .ico { stroke-width: 1.6; }
+.feat h3 { margin: 0; font-size: 40px; line-height: 50px; font-weight: 600; }
+.feat p { margin: 6px 0 0; font-size: 30px; line-height: 40px; color: var(--text-muted); }
+
+@media (prefers-reduced-motion: reduce) { .viewer * { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-fwd" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="16.5" cy="9" r="2.4"/><path d="M15.8 14.4c2.4.1 4.1 1.5 4.7 4"/></symbol>
+    <symbol id="i-plane" viewBox="0 0 24 24"><path d="M21 3L10.5 13.5"/><path d="M21 3l-6.5 18-4-7.5L3 9.5z"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3.8L2.8 19.8h18.4z"/><path d="M12 10v4.4"/><path d="M12 17.3v.1"/></symbol>
+    <symbol id="i-done" viewBox="0 0 24 24"><path d="M1.8 12.8l4.6 4.6L16.2 7.6"/><path d="M10.6 16.2l1.2 1.2L22.2 7.6"/></symbol>
+    <symbol id="i-ring" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.6 2H4.4z"/><path d="M10 20.8a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="i-funnel" viewBox="0 0 24 24"><path d="M3.5 5h17l-6.5 7.5v5.5l-4 2v-7.5z"/></symbol>
+    <symbol id="i-call" viewBox="0 0 24 24"><path d="M5.2 3.8h3.3l1.7 4.3-2.2 1.4a11 11 0 0 0 6.5 6.5l1.4-2.2 4.3 1.7v3.3a1.6 1.6 0 0 1-1.7 1.6C10.6 19.8 4.2 13.4 3.6 5.5a1.6 1.6 0 0 1 1.6-1.7z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.5 10.5v-3a3.5 3.5 0 0 1 7 0v3"/><path d="M12 14.5v2"/></symbol>
+    <symbol id="i-okc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.7 2.7 5.6-5.8"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="1.2"/><path d="M9 7.5h1.5M13.5 7.5H15M9 11h1.5M13.5 11H15M9 14.5h1.5M13.5 14.5H15M10.5 20.5v-3h3v3"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5.5 3h13v18l-2.2-1.4-2.1 1.4-2.2-1.4-2.2 1.4-2.1-1.4-2.2 1.4z"/><path d="M9 8h6M9 11.5h6M9 15h3.5"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4"/><path d="M10.5 18.5h3"/></symbol>
+  </defs>
+</svg>
+
+<main class="viewer">
+  <header class="top">
+    <h1>Baytak demo</h1>
+    <p>16:9 &middot; 1920 &times; 1080 &middot; 37 seconds &middot; no sound</p>
+  </header>
+
+  <div class="stage-wrap" id="wrap">
+    <div class="stage" id="stage" role="img" aria-label="Animated demo of Baytak for the Google Play listing. A building group chat fills with questions about who paid; a receipt slip wipes it away and the Baytak logo lands like a stamp. An administrator adds one receipt for the whole building, a resident gets a notification and sees what they owe in USD and LBP, and the administrator stamps every apartment's door plate as paid. Ends on the logo and the line Building fees, made clear.">
+
+      <!-- Scenes 3 to 6 sit on paper -->
+      <section class="layer" id="s6">
+        <h2 class="hl">A record everyone<br>can trust.</h2>
+        <div class="feats">
+          <div class="feat" style="--d:24s;--o:26.55s"><div class="tile"><svg class="ico"><use href="#i-phone"/></svg></div><div><h3>Sign in with a text code</h3><p>Your phone number is your account. No passwords.</p></div></div>
+          <div class="feat" style="--d:24.18s;--o:26.58s"><div class="tile"><svg class="ico"><use href="#i-bell"/></svg></div><div><h3>Notified on every receipt</h3><p>Residents get a push notification when one is issued.</p></div></div>
+          <div class="feat" style="--d:24.36s;--o:26.61s"><div class="tile"><svg class="ico"><use href="#i-lock"/></svg></div><div><h3>Receipts can't be changed</h3><p>Once issued, a receipt can't be edited or deleted.</p></div></div>
+          <div class="feat" style="--d:24.54s;--o:26.64s"><div class="tile"><svg class="ico"><use href="#i-cash"/></svg></div><div><h3>USD and LBP, kept apart</h3><p>Every amount shows its currency. Totals are never mixed.</p></div></div>
+        </div>
+      </section>
+
+      <!-- Resident's phone -->
+      <div class="phone" id="phR">
+        <div class="phone-in"><div class="screen">
+          <div class="island"></div>
+          <div class="scr" id="scrLock">
+            <div class="sb light"><span>9:42</span><span class="sbi"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx=".7"/><rect x="5" y="5.5" width="3" height="6.5" rx=".7"/><rect x="10" y="3" width="3" height="9" rx=".7"/><rect x="15" y="0" width="3" height="12" rx=".7"/></svg><span class="batt"><i></i></span></span></div>
+            <div class="lk-date">Thursday, October 1</div>
+            <div class="lk-time">9:42</div>
+            <div id="notif">
+              <div class="appicon" role="img" aria-label="Baytak app icon"></div>
+              <div class="nt">
+                <div class="nt-top"><span>Baytak</span><span>now</span></div>
+                <b>New receipt</b>
+                <div>Cedar Residence issued a new receipt of 75 USD.</div>
+              </div>
+            </div>
+            <div class="tap" id="tapNotif"></div>
+          </div>
+          <div class="scr" id="scrHome">
+            <div class="sb light"><span>9:42</span><span class="sbi"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx=".7"/><rect x="5" y="5.5" width="3" height="6.5" rx=".7"/><rect x="10" y="3" width="3" height="9" rx=".7"/><rect x="15" y="0" width="3" height="12" rx=".7"/></svg><span class="batt"><i></i></span></span></div>
+            <div class="band">
+              <div class="plate paper lg">3B</div>
+              <div>
+                <div class="t-heading" style="color:#fff">Cedar Residence</div>
+                <div class="t-cap" style="color:rgba(255,255,255,.85)">3rd floor</div>
+              </div>
+            </div>
+            <div class="home">
+              <div class="verdict">
+                <div id="v1">You owe <span class="num">75</span><span class="cur"> USD</span></div>
+                <div id="v2">and <span class="num">2,225,000</span><span class="cur"> LBP</span></div>
+              </div>
+              <div class="card slipcard" id="slip1">
+                <div class="st"><span class="t-bs">Oct 1, 2026</span><span class="stamp unpaid"><svg class="ico"><use href="#i-ring"/></svg>Unpaid</span></div>
+                <div class="div"></div>
+                <div class="sb2">
+                  <div class="line"><span class="muted">Maintenance</span><span class="num">25</span></div>
+                  <div class="line"><span class="muted">Electricity</span><span class="num">40</span></div>
+                  <div class="line"><span class="muted">Elevator</span><span class="num">10</span></div>
+                </div>
+                <div class="div"></div>
+                <div class="tot"><span class="t-bs">Total</span><span class="num">75 USD</span></div>
+              </div>
+              <div class="card slipcard" id="slip2">
+                <div class="st"><span class="t-bs">Sep 1, 2026</span><span class="stamp unpaid"><svg class="ico"><use href="#i-ring"/></svg>Unpaid</span></div>
+                <div class="div"></div>
+                <div class="sb2"><div class="line"><span class="muted">Generator</span><span class="num">2,225,000</span></div></div>
+                <div class="div"></div>
+                <div class="tot"><span class="t-bs">Total</span><span class="num">2,225,000 LBP</span></div>
+              </div>
+              <div id="paidSec">
+                <div class="t-heading" style="margin-bottom:8px">Paid recently</div>
+                <div class="card">
+                  <div class="prow"><div class="grow"><div class="t-bs">Sep 1, 2026</div><div class="t-cap muted num" style="font-weight:400">75 USD</div></div><span class="stamp paid sm"><svg class="ico"><use href="#i-done"/></svg>Paid</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Administrator's phone -->
+      <div class="phone" id="phA">
+        <div class="phone-in"><div class="screen">
+          <div class="island"></div>
+          <div class="scr" id="scrNew">
+            <div class="sb"><span>9:41</span><span class="sbi"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx=".7"/><rect x="5" y="5.5" width="3" height="6.5" rx=".7"/><rect x="10" y="3" width="3" height="9" rx=".7"/><rect x="15" y="0" width="3" height="12" rx=".7"/></svg><span class="batt"><i></i></span></span></div>
+            <div class="nav"><svg class="ico back"><use href="#i-back"/></svg><span class="t-heading">New receipt</span></div>
+            <div class="nr">
+              <div class="banner"><svg class="ico"><use href="#i-warn"/></svg><span class="t-cap">Once a receipt is added it cannot be edited or deleted.</span></div>
+              <div class="card fields">
+                <div class="field" id="fA"><div class="lbl">Maintenance</div><div class="box"><svg class="ico"><use href="#i-cash"/></svg><span class="val"></span><span class="caret"></span><span class="ph">Amount in USD</span></div></div>
+                <div class="field" id="fB"><div class="lbl">Electricity</div><div class="box"><svg class="ico"><use href="#i-cash"/></svg><span class="val"></span><span class="caret"></span><span class="ph">Amount in USD</span></div></div>
+                <div class="field" id="fC"><div class="lbl">Elevator</div><div class="box"><svg class="ico"><use href="#i-cash"/></svg><span class="val"></span><span class="caret"></span><span class="ph">Amount in USD</span></div></div>
+              </div>
+              <div class="card lrow"><span class="tile"><svg class="ico"><use href="#i-people"/></svg></span><div class="grow"><div class="t-bs">Apartments</div><div class="t-cap muted">Everyone in the building</div></div><svg class="ico"><use href="#i-fwd"/></svg></div>
+              <div class="total"><span class="t-bs">Total</span><span class="t-title" id="total">0 USD</span></div>
+              <div class="btn primary" id="addBtn"><svg class="ico"><use href="#i-plane"/></svg>Add receipt</div>
+            </div>
+            <div class="tap" id="tapAdd"></div>
+            <div id="backdrop"></div>
+            <div id="sheet">
+              <div class="handle"><i></i></div>
+              <div class="t-heading">Add this receipt?</div>
+              <div class="msg">Total 75 USD for the whole building. You won't be able to edit or delete it afterwards.</div>
+              <div class="row">
+                <div class="btn secondary">Cancel</div>
+                <div class="btn primary" id="confirmBtn"><span class="lbl">Add receipt</span><span class="spin"></span></div>
+              </div>
+            </div>
+            <div class="tap" id="tapConfirm"></div>
+            <div id="toast"><svg class="ico"><use href="#i-okc"/></svg>Receipt added successfully</div>
+          </div>
+          <div class="scr" id="scrCollect">
+            <div class="sb light"><span>9:58</span><span class="sbi"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx=".7"/><rect x="5" y="5.5" width="3" height="6.5" rx=".7"/><rect x="10" y="3" width="3" height="9" rx=".7"/><rect x="15" y="0" width="3" height="12" rx=".7"/></svg><span class="batt"><i></i></span></span></div>
+            <div class="band nav-band"><span class="t-heading">Collect</span></div>
+            <div class="col">
+              <div class="t-title" id="colHead">6 of 16 apartments have paid</div>
+              <div class="muted num" style="font-weight:400;margin-top:2px" id="colSum">Collected 450 USD of 1,200 USD</div>
+              <div class="switcher"><div class="grow"><div class="t-cap muted">Receipt</div><div class="t-bs">Oct 1, 2026 &middot; <span class="num">75 USD</span></div></div><span class="t-bs" style="color:var(--ink)">Change</span><svg class="ico"><use href="#i-down"/></svg></div>
+              <div class="actions">
+                <div class="chip"><svg class="ico"><use href="#i-funnel"/></svg>Unpaid only</div>
+                <div class="btn secondary" id="remind"><svg class="ico"><use href="#i-bell"/></svg><span id="remindLbl">Remind 10 unpaid</span></div>
+              </div>
+              <div id="floors"></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Captions -->
+      <div class="cap" id="capA">
+        <div class="eb"><svg class="ico"><use href="#i-building"/></svg>For the building administrator</div>
+        <h2 class="hl">One receipt.<br>The whole building.</h2>
+        <p class="sub">Fill in the amounts once. Every apartment gets it.</p>
+      </div>
+      <div class="cap" id="capB">
+        <div class="eb"><svg class="ico"><use href="#i-people"/></svg>For residents</div>
+        <h2 class="hl">Everyone sees<br>what they owe.</h2>
+        <p class="sub">In USD and LBP, the moment it's issued.</p>
+      </div>
+      <div class="cap" id="capC">
+        <div class="eb"><svg class="ico"><use href="#i-building"/></svg>For the building administrator</div>
+        <h2 class="hl">Tap a door.<br>Stamp it paid.</h2>
+        <p class="sub">Every apartment, floor by floor.</p>
+      </div>
+
+      <!-- Scene 1: the group chat -->
+      <section class="layer" id="s1">
+        <h2 class="hook">Who paid the building fees <em>this month?</em></h2>
+        <div class="chat-head"><span class="av"><svg class="ico"><use href="#i-building"/></svg></span>Building residents <span class="unread" id="unread">37 unread</span></div>
+        <div id="chat"></div>
+      </section>
+
+      <!-- The receipt slip that tears in, then the brand -->
+      <div class="layer" id="slip"></div>
+      <h2 class="brand wm">Baytak</h2>
+      <p class="brand ar"><bdi lang="ar" dir="rtl">بيتك</bdi>&ensp;means &ldquo;your home&rdquo;</p>
+      <p class="brand tag">Building fees, made clear.</p>
+
+      <div id="logo" aria-hidden="true">
+        <div class="part stem"></div>
+        <div class="part bowl"></div>
+      </div>
+      <div id="bugWord" aria-hidden="true">Baytak</div>
+      <div class="layer" id="endFade"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button type="button" id="play" aria-label="Pause"><svg class="ico" viewBox="0 0 24 24" id="playIco"><path d="M8 5v14M16 5v14" stroke-width="3"/></svg></button>
+    <button type="button" id="restart" aria-label="Play from the start"><svg class="ico" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg></button>
+    <input type="range" id="scrub" min="0" max="37200" step="10" value="0" aria-label="Position in the ad">
+    <span class="clock" id="clock">0:00 / 0:37</span>
+  </div>
+  <ol class="chapters" id="chapters"></ol>
+</main>
+
+<script>
+(() => {
+  const D0 = 31, SLOW = 1.2, D = D0 * SLOW;
+  const $ = (s) => document.querySelector(s);
+  const stage = $('#stage');
+
+  /* ---------- Scene 1: the group chat fills up ---------- */
+  const bubbles = [
+    { from: 'Apt 2B', time: '21:40', text: 'Did everyone pay the elevator fee?', x: 925, y: 40, r: -2, t: 0.45 },
+    { from: 'Apt 5A', time: '21:41', text: 'Is it 75 dollars, or in lira this month?', x: 1400, y: 120, r: 2.5, t: 0.75 },
+    { from: 'Apt 1C', time: '21:41', text: 'I paid last week. I think.', x: 935, y: 235, r: -1.5, t: 1.0 },
+    { from: 'Apt 3A', time: '21:43', text: 'Can someone resend the list?', x: 1390, y: 345, r: 3, t: 1.25 },
+    { from: 'Apt 4B', time: '21:43', text: 'Which list?', x: 920, y: 440, r: -3, t: 1.45 },
+    { from: 'Apt 6A', time: '21:44', text: 'Who has the receipt from March?', x: 1405, y: 560, r: 1.5, t: 1.65 },
+    { from: 'Apt 2C', time: '21:46', text: 'Who collected the generator money?', x: 935, y: 600, r: -2.5, t: 1.82 },
+    { from: 'Apt 5B', time: '21:47', text: 'Still waiting on 3 apartments…', x: 1390, y: 770, r: 2, t: 1.98 },
+    { from: 'Apt 1A', time: '21:47', text: '??', x: 925, y: 830, r: -1, t: 2.12 },
+  ];
+  const chat = $('#chat');
+  for (const b of bubbles) {
+    const el = document.createElement('div');
+    el.className = 'bubble';
+    el.style.cssText = `left:${b.x}px;top:${b.y}px;--r:${b.r}deg;--d:${b.t}s`;
+    el.innerHTML = `<div class="b-top"><span class="b-from">${b.from}</span><span class="b-time">${b.time}</span></div><div class="b-text">${b.text}</div>`;
+    chat.appendChild(el);
+  }
+
+  /* ---------- Collect: 16 door plates, 6 paid, 10 stamped in an accelerating rhythm ---------- */
+  const PRICE = 75, CUR = 'USD';
+  const initiallyPaid = new Set(['1A', '1C', '2B', '3D', '4A', '4C']);
+  const order = ['1B', '1D', '2A', '2C', '2D', '3A', '3B', '3C', '4B', '4D'];
+  const gaps = [0, .5, .42, .35, .28, .23, .19, .16, .14, .13];
+  const stampAt = {};
+  let at = 19.5;
+  order.forEach((n, i) => { at += gaps[i]; stampAt[n] = +at.toFixed(2); });
+  const ordinal = (n) => n + (n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th') + ' floor';
+  const ring = '<svg class="ico"><use href="#i-ring"/></svg>';
+  const done = '<svg class="ico"><use href="#i-done"/></svg>';
+  let floorsHtml = '';
+  for (let f = 1; f <= 4; f++) {
+    floorsHtml += `<div class="floor"><h4>${ordinal(f)}</h4><div class="grid">`;
+    for (const l of 'ABCD') {
+      const n = `${f}${l}`;
+      if (initiallyPaid.has(n)) {
+        floorsHtml += `<div class="cell"><div class="plate paper">${n}</div><div class="pc paid">${done}Paid</div></div>`;
+      } else {
+        floorsHtml += `<div class="cell" style="--d:${stampAt[n]}s"><div class="plate">${n}</div><div class="plate paper anim">${n}</div>` +
+          `<div class="pc unpaid anim">${ring}Unpaid</div><div class="pc paid anim">${done}Paid</div><div class="tap" style="--d:${(stampAt[n] - 0.06).toFixed(2)}s"></div></div>`;
+      }
+    }
+    floorsHtml += '</div></div>';
+  }
+  $('#floors').innerHTML = floorsHtml;
+  const stampTimes = Object.values(stampAt).sort((a, b) => a - b);
+
+  /* ---------- Text that follows the clock ---------- */
+  const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const fields = [
+    { el: $('#fA'), focus: [9.4, 9.98], keys: [[9.62, '2'], [9.78, '25']] },
+    { el: $('#fB'), focus: [9.98, 10.5], keys: [[10.15, '4'], [10.3, '40']] },
+    { el: $('#fC'), focus: [10.5, 11.0], keys: [[10.66, '1'], [10.82, '10']] },
+  ].map((f) => ({ ...f, val: f.el.querySelector('.val') }));
+  const cache = new Map();
+  const put = (el, text) => { if (cache.get(el) !== text) { cache.set(el, text); el.textContent = text; } };
+  const els = { total: $('#total'), head: $('#colHead'), sum: $('#colSum'), remind: $('#remind'), remindLbl: $('#remindLbl'), unread: $('#unread') };
+
+  function textAt(t) {
+    let total = 0;
+    for (const f of fields) {
+      let v = '';
+      for (const [k, s] of f.keys) if (t >= k) v = s;
+      total += Number(v || 0);
+      put(f.val, v);
+      f.el.classList.toggle('filled', v !== '');
+      f.el.classList.toggle('focus', t >= f.focus[0] && t < f.focus[1]);
+    }
+    put(els.total, `${fmt(total)} ${CUR}`);
+
+    const paid = initiallyPaid.size + stampTimes.filter((s) => t >= s).length;
+    const count = initiallyPaid.size + order.length;
+    put(els.head, paid === count ? 'Everyone has paid' : `${paid} of ${count} apartments have paid`);
+    put(els.sum, `Collected ${fmt(paid * PRICE)} ${CUR} of ${fmt(count * PRICE)} ${CUR}`);
+    const unpaid = count - paid;
+    put(els.remindLbl, unpaid > 0 ? `Remind ${unpaid} unpaid` : 'Remind');
+    els.remind.classList.toggle('off', unpaid === 0);
+
+    const shown = bubbles.filter((b) => t >= b.t).length;
+    put(els.unread, `${37 + shown * 10 + (shown === bubbles.length ? 1 : 0)} unread`);
+  }
+
+  /* ---------- One clock drives every CSS animation ---------- */
+  let anims = [];
+  function seek(t) {
+    const u = t / SLOW;
+    for (const a of anims) a.currentTime = u * 1000;
+    textAt(u);
+  }
+
+  /* ---------- Viewer ---------- */
+  const wrap = $('#wrap'), scrub = $('#scrub'), clock = $('#clock'), playBtn = $('#play'), playIco = $('#playIco');
+  const chapters = [['Hook', 0], ['Logo', 4.2], ['Issue', 8.5], ['Notify', 13.6], ['Collect', 18.45], ['Trust', 23.7], ['End card', 26.8]].map(([n, s]) => [n, s * SLOW]);
+  const chapList = $('#chapters');
+  chapList.innerHTML = chapters.map(([n, s]) => `<li><button type="button" data-t="${s}">${n}</button></li>`).join('');
+  const chapBtns = [...chapList.querySelectorAll('button')];
+  let exporting = false;
+
+  function fit() {
+    let s = 1;
+    if (!exporting) {
+      const chrome = $('.top').offsetHeight + $('.controls').offsetHeight + chapList.offsetHeight + 16 * 2 + 14 * 3;
+      const availW = Math.min(document.documentElement.clientWidth - 32, 1920);
+      const availH = Math.max(320, window.innerHeight - chrome);
+      s = Math.max(0.16, Math.min(availW / 1920, availH / 1080));
+    }
+    stage.style.transform = `scale(${s})`;
+    wrap.style.width = `${1920 * s}px`;
+    wrap.style.height = `${1080 * s}px`;
+    document.documentElement.style.setProperty('--w', `${Math.max(1920 * s, 300)}px`);
+  }
+
+  let playing = false, t = 0, last = 0;
+  const mmss = (x) => `${Math.floor(x / 60)}:${String(Math.floor(x % 60)).padStart(2, '0')}`;
+  function ui() {
+    scrub.value = Math.round(t * 1000);
+    clock.textContent = `${mmss(t)} / ${mmss(D)}`;
+    let cur = 0;
+    chapters.forEach(([, s], i) => { if (t >= s) cur = i; });
+    chapBtns.forEach((b, i) => b.setAttribute('aria-current', String(i === cur)));
+  }
+  function setPlaying(p) {
+    playing = p;
+    playBtn.setAttribute('aria-label', p ? 'Pause' : 'Play');
+    playIco.innerHTML = p ? '<path d="M8 5v14M16 5v14" stroke-width="3"/>' : '<path d="M7 4.5v15l12-7.5z" fill="currentColor"/>';
+    if (p) { last = performance.now(); requestAnimationFrame(frame); }
+  }
+  function frame(now) {
+    if (!playing) return;
+    t += Math.min((now - last) / 1000, 0.1);
+    last = now;
+    if (t >= D) t -= D;
+    seek(t); ui();
+    requestAnimationFrame(frame);
+  }
+  const goTo = (x) => { t = Math.max(0, Math.min(D - 0.001, x)); seek(t); ui(); };
+
+  playBtn.addEventListener('click', () => setPlaying(!playing));
+  $('#restart').addEventListener('click', () => { goTo(0); setPlaying(true); });
+  scrub.addEventListener('input', () => goTo(scrub.value / 1000));
+  chapList.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { goTo(+b.dataset.t); setPlaying(true); } });
+  document.addEventListener('keydown', (e) => {
+    if (e.target === scrub || e.target.closest('button')) return;
+    if (e.key === ' ' || e.key === 'k') { e.preventDefault(); setPlaying(!playing); }
+  });
+  window.addEventListener('resize', fit);
+
+  window.baytakAd = {
+    duration: D,
+    seek: (x) => { t = x; seek(x); },
+    pause: () => setPlaying(false),
+    exportMode: () => { exporting = true; setPlaying(false); document.documentElement.classList.add('export'); fit(); },
+    ready: null,
+  };
+
+  fit();
+  textAt(0);
+  const logoReady = new Promise((res) => { const img = new Image(); img.onload = img.onerror = res; img.src = '../../assets/adaptive-icon.png'; });
+  window.baytakAd.ready = Promise.all([document.fonts.ready, logoReady]).then(() => {
+    anims = stage.getAnimations({ subtree: true });
+    anims.forEach((a) => a.pause());
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { goTo(29.5 * SLOW); setPlaying(false); }
+    else if (!exporting) { goTo(0); setPlaying(true); }
+    fit();
+  });
+})();
+</script>
+</body>
+</html>

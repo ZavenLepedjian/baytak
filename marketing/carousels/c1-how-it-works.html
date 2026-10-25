@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Baytak Carousel: How It Works</title>
+<link rel="stylesheet" href="../reels/kit.css">
+<style>
+/* Carousel slide frame: brand mark top-left, slide count top-right, title, visual, caption. */
+.slide { background: var(--paper); }
+.slide.ink { background: radial-gradient(110% 60% at 10% 0%, #1AA79D 0%, transparent 60%), linear-gradient(170deg, #00847C 0%, #05302E 75%); color: #fff; }
+.slide.white { background: #fff; }
+.brandmark { position: absolute; left: 64px; top: 56px; display: flex; align-items: center; gap: 14px; font-size: 40px; font-weight: 700; color: var(--ink-deep); }
+.brandmark .mark { width: 39px; height: 66px; background: var(--logo) no-repeat -31.8px -14.7px / 97px 97px; }
+.ink .brandmark { color: #fff; }
+.ink .brandmark .mark { width: 72px; height: 72px; border-radius: 16px; background: #fff var(--logo) 50% 50% / 112% no-repeat; }
+.count { position: absolute; right: 64px; top: 70px; font-size: 30px; font-weight: 600; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.ink .count { color: rgba(255,255,255,.7); }
+.title { position: absolute; left: 72px; top: 170px; width: 936px; margin: 0; font-size: 76px; line-height: 84px; font-weight: 700; letter-spacing: -.8px; text-wrap: balance; }
+.title em { font-style: normal; color: var(--ink); }
+.ink .title em { color: var(--ink-soft); }
+.caption { position: absolute; left: 72px; bottom: 80px; width: 936px; margin: 0; font-size: 38px; line-height: 52px; color: var(--text-muted); text-wrap: pretty; }
+.ink .caption { color: rgba(255,255,255,.85); }
+.zoom { position: absolute; transform-origin: 0 0; }
+.swipe { position: absolute; right: 64px; bottom: 80px; display: flex; align-items: center; gap: 10px; font-size: 34px; font-weight: 600; color: var(--ink-soft); }
+.swipe .ico { font-size: 40px; }
+.plates { position: absolute; display: grid; gap: 22px; }
+.plates .plate { width: 190px; height: 96px; font-size: 52px; }
+.st { display: flex; justify-content: center; margin-top: 12px; }
+.st .stamp { font-size: 22px; line-height: 28px; padding: 3px 12px; gap: 6px; border-width: 3px; border-radius: 6px; letter-spacing: 1.4px; }
+.st .stamp .ico { font-size: 26px; }
+.cellp { display: flex; flex-direction: column; }
+.bcard { position: absolute; left: 72px; top: 560px; width: 936px; padding: 40px; border-radius: 18px; background: #fff; box-shadow: 0 6px 18px rgba(5,48,46,.08); }
+.bcard .row { display: flex; align-items: center; gap: 24px; }
+.bcard .tile { width: 96px; height: 96px; border-radius: 16px; background: var(--ink-soft); color: var(--ink); display: grid; place-items: center; font-size: 54px; }
+.bcard .name { font-size: 48px; line-height: 58px; font-weight: 700; }
+.bcard .meta { font-size: 34px; line-height: 46px; color: var(--text-muted); }
+.bcard .floors { margin-top: 34px; display: grid; gap: 14px; }
+.bcard .floor { display: flex; align-items: center; gap: 14px; }
+.bcard .floor b { width: 150px; font-size: 28px; font-weight: 600; color: var(--text-muted); }
+.bcard .floor .plate { width: 150px; height: 70px; font-size: 36px; }
+.req { position: absolute; left: 72px; top: 590px; width: 936px; padding: 40px; border-radius: 18px; background: #fff; box-shadow: 0 6px 18px rgba(5,48,46,.08); }
+.req .row { display: flex; align-items: center; gap: 32px; }
+.req .plate { width: 200px; height: 120px; font-size: 64px; }
+.req .who { font-size: 44px; line-height: 54px; font-weight: 700; }
+.req .what { font-size: 34px; line-height: 46px; color: var(--text-muted); }
+.req .btns { display: flex; gap: 22px; margin-top: 36px; }
+.req .b { flex: 1; height: 100px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 14px; font-size: 38px; font-weight: 600; }
+.req .b.sec { background: var(--ink-soft); color: var(--ink-deep); }
+.req .b.pri { background: var(--ink); color: #fff; }
+.lockup { position: absolute; left: 0; right: 0; text-align: center; }
+.lockup .logo { position: absolute; left: 330px; top: 160px; width: 420px; height: 420px; background: var(--logo) center / 100% no-repeat; }
+.lockup .wm { position: absolute; left: 0; right: 0; top: 600px; margin: 0; font-size: 130px; line-height: 1.1; font-weight: 700; letter-spacing: -2px; color: var(--ink-deep); }
+.lockup .tg { position: absolute; left: 0; right: 0; top: 770px; margin: 0; font-size: 54px; font-weight: 600; color: var(--ink); }
+.lockup .cta { position: absolute; left: 50%; top: 930px; transform: translateX(-50%); display: flex; align-items: center; gap: 18px; padding: 0 52px; height: 112px; border-radius: 14px; background: var(--ink); color: #fff; font-size: 40px; font-weight: 600; white-space: nowrap; }
+.lockup .handle { position: absolute; left: 0; right: 0; top: 1100px; margin: 0; font-size: 40px; font-weight: 700; color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="stage portrait" id="stage" role="img" aria-label="Carousel: how Baytak works in six slides, from adding the building to stamping every apartment paid.">
+
+  <section class="slide ink">
+    <div class="brandmark"><span class="mark"></span>Baytak</div>
+    <div class="count">1/6</div>
+    <h2 class="title" style="top:230px">How Baytak works: <em>from one receipt to everyone paid.</em></h2>
+    <div class="plates" style="left:72px; top:760px; grid-template-columns: repeat(4, 190px); column-gap: 58px;">
+      <div class="cellp"><div class="plate big paper paid">1A</div><div class="st"><span class="stamp paid"><svg class="ico"><use href="#i-done"/></svg>Paid</span></div></div>
+      <div class="cellp"><div class="plate big paper paid">1B</div><div class="st"><span class="stamp paid"><svg class="ico"><use href="#i-done"/></svg>Paid</span></div></div>
+      <div class="cellp"><div class="plate big">1C</div><div class="st"><span class="stamp unpaid"><svg class="ico"><use href="#i-ring"/></svg>Unpaid</span></div></div>
+      <div class="cellp"><div class="plate big paper paid">1D</div><div class="st"><span class="stamp paid"><svg class="ico"><use href="#i-done"/></svg>Paid</span></div></div>
+    </div>
+    <div class="swipe">Swipe <svg class="ico"><use href="#i-fwd"/></svg></div>
+  </section>
+
+  <section class="slide">
+    <div class="brandmark"><span class="mark"></span>Baytak</div>
+    <div class="count">2/6</div>
+    <h2 class="title">The administrator <em>adds the building.</em></h2>
+    <div class="bcard">
+      <div class="row"><div class="tile"><svg class="ico"><use href="#i-building"/></svg></div><div><div class="name">Cedar Residence</div><div class="meta">4 floors &middot; 16 apartments</div></div></div>
+      <div class="floors">
+        <div class="floor"><b>4th floor</b><div class="plate big">4A</div><div class="plate big">4B</div><div class="plate big">4C</div><div class="plate big">4D</div></div>
+        <div class="floor"><b>3rd floor</b><div class="plate big">3A</div><div class="plate big">3B</div><div class="plate big">3C</div><div class="plate big">3D</div></div>
+      </div>
+    </div>
+    <p class="caption">Name, address, floors and its spot on the map. Residents find it nearest first.</p>
+  </section>
+
+  <section class="slide">
+    <div class="brandmark"><span class="mark"></span>Baytak</div>
+    <div class="count">3/6</div>
+    <h2 class="title">Residents <em>join their apartment.</em></h2>
+    <div class="req">
+      <div class="row"><div class="plate big">3B</div><div><div class="who">Join request</div><div class="what">Apartment 3B (floor 3) wants to join Cedar Residence.</div></div></div>
+      <div class="btns"><div class="b sec">Reject</div><div class="b pri"><svg class="ico"><use href="#i-done"/></svg>Approve</div></div>
+    </div>
+    <p class="caption">The administrator approves every request, so only the building's residents get in.</p>
+  </section>
+
+  <section class="slide">
+    <div class="brandmark"><span class="mark"></span>Baytak</div>
+    <div class="count">4/6</div>
+    <h2 class="title">One receipt <em>reaches every apartment.</em></h2>
+    <div class="zoom" style="left:72px; top:510px; width:468px; transform: scale(2)">
+      <div class="notif" style="margin-bottom:14px"><div class="appicon"></div><div class="nt"><div class="nt-top"><span>Baytak</span><span>now</span></div><b>New receipt</b><div>Cedar Residence issued a new receipt of 75 USD.</div></div></div>
+      <div class="card slipcard">
+        <div class="st" style="margin:0"><span class="t-bs">Oct 1, 2026</span><span class="stamp unpaid" style="font-size:13px;line-height:16px;padding:3px 8px;border-width:2px;border-radius:4px;letter-spacing:1px;gap:4px"><svg class="ico" style="font-size:16px"><use href="#i-ring"/></svg>Unpaid</span></div>
+        <div class="div"></div>
+        <div class="tot"><span class="t-bs">Total</span><span class="num">75 USD</span></div>
+      </div>
+    </div>
+    <p class="caption">Add the amounts once, in USD or LBP. Every resident gets a notification.</p>
+  </section>
+
+  <section class="slide">
+    <div class="brandmark"><span class="mark"></span>Baytak</div>
+    <div class="count">5/6</div>
+    <h2 class="title">Tap a door. <em>Stamp it paid.</em></h2>
+    <div class="plates" style="left:72px; top:560px; grid-template-columns: repeat(4, 190px); column-gap: 58px; row-gap: 26px;">
+      <div class="cellp"><div class="plate big paper paid">2A</div><div class="st"><span class="stamp paid"><svg class="ico"><use href="#i-done"/></svg>Paid</span></div></div>
+      <div class="cellp"><div class="plate big paper paid">2B</div><div class="st"><span class="stamp paid"><svg class="ico"><use href="#i-done"/></svg>Paid</span></div></div>
+      <div class="cellp"><div class="plate big paper paid">2C</div><div class="st"><span class="stamp paid"><svg class="ico"><use href="#i-done"/></svg>Paid</span></div></div>
+      <div class="cellp"><div class="plate big">2D</div><div class="st"><span class="stamp unpaid"><svg class="ico"><use href="#i-ring"/></svg>Unpaid</span></div></div>
+      <div class="cellp"><div class="plate big paper paid">1A</div><div class="st"><span class="stamp paid"><svg class="ico"><use href="#i-done"/></svg>Paid</span></div></div>
+      <div class="cellp"><div class="plate big">1B</div><div class="st"><span class="stamp unpaid"><svg class="ico"><use href="#i-ring"/></svg>Unpaid</span></div></div>
+      <div class="cellp"><div class="plate big paper paid">1C</div><div class="st"><span class="stamp paid"><svg class="ico"><use href="#i-done"/></svg>Paid</span></div></div>
+      <div class="cellp"><div class="plate big paper paid">1D</div><div class="st"><span class="stamp paid"><svg class="ico"><use href="#i-done"/></svg>Paid</span></div></div>
+    </div>
+    <p class="caption" style="bottom:200px"><b style="color:var(--text);font-weight:700">6 of 8 apartments have paid.</b></p>
+    <p class="caption">Paid or unpaid, the administrator and every resident see the same record.</p>
+  </section>
+
+  <section class="slide white">
+    <div class="count">6/6</div>
+    <div class="lockup">
+      <div class="logo" role="img" aria-label="Baytak logo"></div>
+      <p class="wm">Baytak</p>
+      <p class="tg">Building fees, made clear.</p>
+      <div class="cta"><svg class="ico"><use href="#i-chat"/></svg>Managing a building? DM us.</div>
+      <p class="handle">@getbaytak</p>
+    </div>
+  </section>
+</div>
+<script src="../reels/kit.js"></script>
+<script>
+Kit.init({ title: 'Baytak carousel: how it works', slides: true });
+</script>
+</body>
+</html>

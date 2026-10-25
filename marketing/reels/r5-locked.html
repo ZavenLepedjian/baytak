@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Baytak Reel: Receipts Stay Put</title>
+<link rel="stylesheet" href="kit.css">
+<style>
+#h1 { top: 200px; animation: rise .5s var(--e-out) .1s both, sink .35s var(--e-in) 4.3s forwards; }
+#h2 { top: 200px; animation: rise .5s var(--e-out) 4.7s both; }
+#say { top: 1240px; animation: rise .5s var(--e-out) 5.1s both; }
+.zoom { position: absolute; left: 100px; width: 440px; transform: scale(2); transform-origin: 0 0; }
+#slip { top: 600px; }
+#slip .card { animation: printIn .6s var(--e-out) .5s both, shake .42s linear 2.02s, shake .42s linear 3.42s; }
+#banner { top: 1040px; }
+#banner .banner { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; background: var(--ink-tint); border: 1px solid var(--ink-soft); animation: rise .45s var(--e-out) 3.55s both; --dy: 12px; }
+#banner .ico { font-size: 19px; color: var(--ink); margin-top: 1px; }
+.lock { position: absolute; z-index: 5; display: flex; align-items: center; gap: 12px; padding: 12px 22px; border-radius: 10px; background: var(--ink); color: #fff; font-size: 36px; line-height: 44px; font-weight: 600; box-shadow: 0 10px 24px rgba(5,48,46,.3); }
+.lock .ico { font-size: 40px; }
+#lock1 { left: 545px; top: 922px; --r: -2deg; animation: stampLand .5s linear 2.05s both; }
+#lock2 { left: 380px; top: 616px; --r: 2deg; animation: stampLand .5s linear 3.45s both; }
+.cursor { position: absolute; z-index: 10; left: 0; top: 0; width: 130px; height: 130px; margin: -65px 0 0 -65px; border-radius: 50%; display: grid; place-items: center; font-size: 64px; color: #fff; background: var(--ink-deep); box-shadow: 0 0 0 6px #fff, 0 14px 30px rgba(5,48,46,.35); }
+.cursor .ico { stroke-width: 1.7; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage" style="--end: 7s" role="img" aria-label="Reel: a pencil tries to change the 75 USD total on a receipt and a trash can tries to delete it. Both are refused with a Locked tag and the app's note: once a receipt is added it cannot be edited or deleted.">
+  <h2 class="hook" id="h1">Can someone change the amount <em>after it's sent?</em></h2>
+  <h2 class="hook" id="h2">No. Once it's issued, <em>it's final.</em></h2>
+  <p class="say" id="say">The admin and every resident see <b>the same record.</b></p>
+  <div class="zoom" id="slip">
+    <div class="card slipcard">
+      <div class="st"><span class="t-bs">Oct 1, 2026</span><span class="stamp unpaid"><svg class="ico"><use href="#i-ring"/></svg>Unpaid</span></div>
+      <div class="div"></div>
+      <div class="sb2">
+        <div class="line"><span class="muted">Maintenance</span><span class="num">25</span></div>
+        <div class="line"><span class="muted">Electricity</span><span class="num">40</span></div>
+        <div class="line"><span class="muted">Elevator</span><span class="num">10</span></div>
+      </div>
+      <div class="div"></div>
+      <div class="tot"><span class="t-bs">Total</span><span class="num">75 USD</span></div>
+    </div>
+  </div>
+  <div class="lock" id="lock1"><svg class="ico"><use href="#i-lock"/></svg>Locked</div>
+  <div class="lock" id="lock2"><svg class="ico"><use href="#i-lock"/></svg>Locked</div>
+  <div class="zoom" id="banner"><div class="banner"><svg class="ico"><use href="#i-warn"/></svg><span class="t-cap">Once a receipt is added it cannot be edited or deleted.</span></div></div>
+  <div class="cursor js" id="pen"><svg class="ico"><use href="#i-pencil"/></svg></div>
+  <div class="cursor js" id="bin"><svg class="ico"><use href="#i-trash"/></svg></div>
+  <div class="tap big" style="left:860px;top:954px;--d:1.95s"></div>
+  <div class="tap big" style="left:880px;top:650px;--d:3.35s"></div>
+</div>
+<script src="kit.js"></script>
+<script>
+(() => {
+  const { seg, ease, lerp } = Kit;
+  const pen = document.getElementById('pen'), bin = document.getElementById('bin');
+  // A cursor glides in, presses, recoils, and leaves.
+  const move = (el, t, from, to, t0, t1, out) => {
+    const p = ease.inOut(seg(t, t0, t1));
+    const back = ease.out(seg(t, t1 + 0.12, t1 + 0.45)) * 0.35;
+    const leave = ease.in(seg(t, out, out + 0.4));
+    const x = lerp(lerp(from[0], to[0], p), to[0] + 140, Math.max(back, leave));
+    const y = lerp(lerp(from[1], to[1], p), to[1] + 260, Math.max(back * 0.5, leave));
+    const press = 1 - 0.12 * Math.sin(Math.PI * seg(t, t1 - 0.05, t1 + 0.15));
+    el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${press.toFixed(3)})`;
+    el.style.opacity = (seg(t, t0 - 0.1, t0 + 0.15) * (1 - seg(t, out, out + 0.35))).toFixed(3);
+  };
+  Kit.init({
+    title: 'Baytak Reel: receipts stay put',
+    duration: 10,
+    update(t) {
+      move(pen, t, [1060, 1700], [860, 954], 1.25, 1.95, 2.55);
+      move(bin, t, [1060, 1500], [880, 650], 2.7, 3.35, 3.95);
+    },
+  });
+})();
+</script>
+</body>
+</html>

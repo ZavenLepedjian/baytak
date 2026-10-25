@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Baytak Reel: One Receipt</title>
+<link rel="stylesheet" href="kit.css">
+<style>
+#h1 { top: 200px; animation: rise .5s var(--e-out) .1s both, sink .35s var(--e-in) 5.1s forwards; }
+#h2 { top: 200px; animation: rise .5s var(--e-out) 5.55s both; }
+#say2 { top: 420px; animation: rise .5s var(--e-out) 5.75s both; }
+#ph { --py: 560px; animation: phoneUp .7s var(--e-out) .35s both, phoneDown .5s var(--e-in) 5.15s forwards; }
+/* New receipt screen (app points) */
+.nr { position: absolute; top: 99px; left: 16px; right: 16px; display: flex; flex-direction: column; gap: 16px; }
+.banner { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; background: var(--ink-tint); border: 1px solid var(--ink-soft); }
+.banner .ico { font-size: 19px; color: var(--ink); margin-top: 1px; }
+.fields { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.lrow { display: flex; align-items: center; gap: 12px; padding: 12px 16px; min-height: 64px; }
+.lrow .tile { width: 36px; height: 36px; border-radius: 8px; background: var(--ink-soft); color: var(--ink); display: grid; place-items: center; font-size: 20px; }
+.lrow .grow { flex: 1; }
+.lrow > .ico { color: var(--text-faint); font-size: 18px; }
+.total { display: flex; align-items: center; justify-content: space-between; padding: 16px; border-radius: 10px; background: var(--ink-tint); color: var(--ink-deep); }
+#addBtn { margin-top: 8px; animation: press .3s ease 2.8s; }
+#tapAdd { left: 195px; top: 699px; --d: 2.8s; }
+#backdrop { position: absolute; inset: 0; z-index: 30; background: rgba(5,48,46,.5); animation: fadeIn .28s ease 3s both, fadeOut .18s ease 4.15s forwards; }
+#sheet { position: absolute; z-index: 31; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 14px 14px 0 0; padding: 0 16px 50px; animation: sheetUp .28s var(--e-out) 3s both, sheetDown .18s var(--e-in) 4.15s forwards; }
+#sheet .handle { height: 44px; display: grid; place-items: center; }
+#sheet .handle i { width: 40px; height: 4px; border-radius: 2px; background: var(--rule-strong); }
+#sheet .msg { margin-top: 8px; color: var(--text-muted); }
+#sheet .row { display: flex; gap: 12px; margin-top: 24px; }
+#sheet .row .btn { flex: 1; }
+#confirmBtn { animation: press .3s ease 3.65s; }
+#confirmBtn .lbl { animation: hide .45s 3.7s; }
+#confirmBtn .spin { position: absolute; width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff; opacity: 0; animation: show .45s 3.7s, spin .7s linear 3.7s infinite; }
+#tapConfirm { left: 287px; top: 768px; --d: 3.65s; }
+#toast { animation: toastIn .22s var(--e-out) 4.35s both; }
+/* Every apartment gets it: door plates at stage scale */
+.grid { position: absolute; left: 72px; top: 610px; width: 936px; display: grid; grid-template-columns: repeat(4, 200px); column-gap: 45px; row-gap: 70px; }
+.cell { position: relative; height: 130px; animation: rise .45s var(--e-out) var(--d) both; --dy: 30px; }
+.plate.big { width: 200px; height: 130px; font-size: 64px; }
+.badge { position: absolute; right: -20px; top: -24px; width: 76px; height: 76px; border-radius: 50%; background: #fff; color: var(--ink); display: grid; place-items: center; font-size: 42px; box-shadow: 0 6px 16px rgba(5,48,46,.25); animation: stampLand .5s linear var(--b) both; --r: 0deg; }
+.badge .ico { stroke-width: 2; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage" style="--end: 9s" role="img" aria-label="Reel: an administrator fills in Maintenance 25, Electricity 40 and Elevator 10 USD, adds the receipt for the whole building, and all 16 apartments get a notification.">
+  <h2 class="hook" id="h1">Bill your whole building <em>in one go.</em></h2>
+  <h2 class="hook" id="h2">Every apartment <em>gets it.</em></h2>
+  <p class="say" id="say2">Notified <b id="cnt">0 of 16</b> apartments.</p>
+
+  <div class="phone" id="ph">
+    <div class="phone-in"><div class="screen">
+      <div class="island"></div>
+      <div class="scr">
+        <div id="sbNew"></div>
+        <div class="nav"><svg class="ico back"><use href="#i-back"/></svg><span class="t-heading">New receipt</span></div>
+        <div class="nr">
+          <div class="banner"><svg class="ico"><use href="#i-warn"/></svg><span class="t-cap">Once a receipt is added it cannot be edited or deleted.</span></div>
+          <div class="card fields">
+            <div class="field" id="fA"><div class="lbl">Maintenance</div><div class="box"><svg class="ico"><use href="#i-cash"/></svg><span class="val"></span><span class="caret"></span><span class="ph">Amount in USD</span></div></div>
+            <div class="field" id="fB"><div class="lbl">Electricity</div><div class="box"><svg class="ico"><use href="#i-cash"/></svg><span class="val"></span><span class="caret"></span><span class="ph">Amount in USD</span></div></div>
+            <div class="field" id="fC"><div class="lbl">Elevator</div><div class="box"><svg class="ico"><use href="#i-cash"/></svg><span class="val"></span><span class="caret"></span><span class="ph">Amount in USD</span></div></div>
+          </div>
+          <div class="card lrow"><span class="tile"><svg class="ico"><use href="#i-people"/></svg></span><div class="grow"><div class="t-bs">Apartments</div><div class="t-cap muted">Everyone in the building</div></div><svg class="ico"><use href="#i-fwd"/></svg></div>
+          <div class="total"><span class="t-bs">Total</span><span class="t-title" id="total">0 USD</span></div>
+          <div class="btn primary" id="addBtn"><svg class="ico"><use href="#i-plane"/></svg>Add receipt</div>
+        </div>
+        <div class="tap" id="tapAdd"></div>
+        <div id="backdrop"></div>
+        <div id="sheet">
+          <div class="handle"><i></i></div>
+          <div class="t-heading">Add this receipt?</div>
+          <div class="msg">Total 75 USD for the whole building. You won't be able to edit or delete it afterwards.</div>
+          <div class="row">
+            <div class="btn secondary">Cancel</div>
+            <div class="btn primary" id="confirmBtn"><span class="lbl">Add receipt</span><span class="spin"></span></div>
+          </div>
+        </div>
+        <div class="tap" id="tapConfirm"></div>
+        <div class="toast success" id="toast"><svg class="ico"><use href="#i-okc"/></svg>Receipt added successfully</div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+<script src="kit.js"></script>
+<script>
+(() => {
+  document.getElementById('sbNew').outerHTML = Kit.statusBar('9:41', false);
+  const grid = document.getElementById('grid');
+  const badgeAt = [];
+  let html = '';
+  let i = 0;
+  for (let f = 4; f >= 1; f--) {
+    for (const l of 'ABCD') {
+      const b = +(6.05 + i * 0.1).toFixed(2);
+      badgeAt.push(b);
+      html += `<div class="cell" style="--d:${(5.6 + i * 0.03).toFixed(2)}s;--b:${b}s"><div class="plate big">${f}${l}</div><div class="badge">${Kit.icon('bell')}</div></div>`;
+      i++;
+    }
+  }
+  grid.innerHTML = html;
+
+  const fields = [
+    { el: document.getElementById('fA'), focus: [1.05, 1.6], keys: [[1.2, '2'], [1.34, '25']] },
+    { el: document.getElementById('fB'), focus: [1.6, 2.1], keys: [[1.75, '4'], [1.89, '40']] },
+    { el: document.getElementById('fC'), focus: [2.1, 2.6], keys: [[2.25, '1'], [2.39, '10']] },
+  ].map((f) => ({ ...f, val: f.el.querySelector('.val') }));
+  const total = document.getElementById('total'), cnt = document.getElementById('cnt');
+
+  window.__sfx = [...fields.flatMap((f) => f.keys.map(([k]) => [k, 'key'])), ...badgeAt.map((b) => [b, 'tick'])]; // sound cues
+  Kit.init({
+    title: 'Baytak Reel: one receipt for the whole building',
+    duration: 12,
+    update(t) {
+      let sum = 0;
+      for (const f of fields) {
+        let v = '';
+        for (const [k, s] of f.keys) if (t >= k) v = s;
+        sum += Number(v || 0);
+        f.val.textContent = v;
+        f.el.classList.toggle('filled', v !== '');
+        f.el.classList.toggle('focus', t >= f.focus[0] && t < f.focus[1]);
+      }
+      total.textContent = `${sum} USD`;
+      cnt.textContent = `${badgeAt.filter((b) => t >= b + 0.05).length} of 16`;
+    },
+  });
+})();
+</script>
+</body>
+</html>

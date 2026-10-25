@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Baytak Reel: 100 Messages</title>
+<link rel="stylesheet" href="kit.css">
+<style>
+#bg { background: radial-gradient(120% 60% at 15% 0%, #1AA79D 0%, transparent 60%), linear-gradient(170deg, #00847C 0%, #05302E 70%); }
+#h1 { top: 210px; animation: sink .4s var(--e-in) 4.05s forwards; }
+#h2 { top: 210px; animation: rise .55s var(--e-out) 4.75s both; }
+.count { position: absolute; left: 72px; top: 548px; display: flex; align-items: center; gap: 14px; font-size: 32px; font-weight: 600; color: rgba(255,255,255,.88); }
+.count .ico { font-size: 38px; }
+.count span { font-variant-numeric: tabular-nums; }
+/* Group-chat notifications, stage scale */
+.n { position: absolute; left: 72px; top: 0; width: 936px; display: flex; gap: 24px; padding: 26px 30px; border-radius: 40px; background: rgba(255,255,255,.93); box-shadow: 0 14px 40px rgba(0,0,0,.3); transform-origin: 50% 0; color: #05302E; }
+.n .ic { width: 76px; height: 76px; flex: none; border-radius: 18px; background: #B9BDCC; color: #fff; display: grid; place-items: center; font-size: 46px; }
+.n .bd { flex: 1; min-width: 0; }
+.n .tp { display: flex; justify-content: space-between; font-size: 26px; line-height: 32px; color: #5B706E; }
+.n .who { font-size: 32px; line-height: 40px; font-weight: 600; }
+.n .msg { font-size: 32px; line-height: 40px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The one that matters */
+.zoom { position: absolute; left: 94px; width: 470px; transform-origin: 0 0; }
+#bn { top: 740px; transform: scale(1.9); }
+#bn .notif { animation: rise .5s var(--e-out) 4.6s both; --dy: -40px; }
+#slip { top: 1000px; transform: scale(1.9); }
+#slip .card { animation: printIn .6s var(--e-out) 5.35s both; }
+#slip .stamp { animation: stampLand .6s linear 5.9s both; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage" style="--end: 8s" role="img" aria-label="Reel: a lock screen fills with group chat messages about building fees, then they are swept away and one Baytak notification arrives: New receipt, Cedar Residence issued a new receipt of 75 USD.">
+  <div class="layer" id="bg"></div>
+  <h2 class="hook light" id="h1">Building fees shouldn't take <em>100 messages.</em></h2>
+  <h2 class="hook light" id="h2">Or one receipt <em>everyone can see.</em></h2>
+  <div class="count" id="count"><svg class="ico"><use href="#i-chatdots"/></svg><span id="countTxt">12 new messages</span></div>
+  <div id="stack"></div>
+  <div class="zoom" id="bn">
+    <div class="notif">
+      <div class="appicon"></div>
+      <div class="nt"><div class="nt-top"><span>Baytak</span><span>now</span></div><b>New receipt</b><div>Cedar Residence issued a new receipt of 75 USD.</div></div>
+    </div>
+  </div>
+  <div class="zoom" id="slip">
+    <div class="card slipcard">
+      <div class="st"><span class="t-bs">Oct 1, 2026</span><span class="stamp unpaid"><svg class="ico"><use href="#i-ring"/></svg>Unpaid</span></div>
+      <div class="div"></div>
+      <div class="sb2">
+        <div class="line"><span class="muted">Maintenance</span><span class="num">25</span></div>
+        <div class="line"><span class="muted">Electricity</span><span class="num">40</span></div>
+        <div class="line"><span class="muted">Elevator</span><span class="num">10</span></div>
+      </div>
+      <div class="div"></div>
+      <div class="tot"><span class="t-bs">Total</span><span class="num">75 USD</span></div>
+    </div>
+  </div>
+</div>
+<script src="kit.js"></script>
+<script>
+(() => {
+  const { seg, ease, clamp } = Kit;
+  const msgs = [
+    ['Apt 2B', 'Did everyone pay the elevator fee?'],
+    ['Apt 5A', 'Is it 75 dollars, or in lira this month?'],
+    ['Apt 1C', 'I paid last week. I think.'],
+    ['Apt 3A', 'Can someone resend the list?'],
+    ['Apt 4B', 'Which list?'],
+    ['Apt 6A', 'Who has the receipt from March?'],
+    ['Apt 2C', 'Who collected the generator money?'],
+    ['Apt 5B', 'Still waiting on 3 apartments…'],
+    ['Apt 1A', '??'],
+    ['Apt 3B', 'Did my payment go through?'],
+    ['Apt 4A', "What's the total this month?"],
+    ['Apt 6B', "Who's keeping track of this?"],
+    ['Apt 2A', 'Sorry, which month are we on?'],
+    ['Apt 5A', 'Hello??'],
+  ];
+  const arrive = [0.45, 0.9, 1.3, 1.64, 1.94, 2.2, 2.42, 2.62, 2.8, 2.96, 3.1, 3.23, 3.35, 3.46];
+  const stack = document.getElementById('stack');
+  const els = msgs.map(([who, text]) => {
+    const el = document.createElement('div');
+    el.className = 'n js';
+    el.innerHTML = `<div class="ic">${Kit.icon('chat')}</div><div class="bd"><div class="tp"><span>Group chat</span><span>now</span></div><div class="who">Building residents</div><div class="msg">${who}: ${text}</div></div>`;
+    stack.appendChild(el);
+    return el;
+  });
+  const count = document.getElementById('count'), countTxt = document.getElementById('countTxt');
+  const TOP = 640, SLOT = 196;
+
+  window.__sfx = arrive.map((a) => [a, 'pop2']); // sound cues for the audio track
+  Kit.init({
+    title: 'Baytak Reel: 100 messages',
+    duration: 11,
+    bug: 'light',
+    update(t) {
+      const sweep = ease.in(seg(t, 3.85, 4.5));
+      els.forEach((el, i) => {
+        const a = arrive[i];
+        const enter = ease.out(seg(t, a, a + 0.32));
+        let pushed = 0;
+        for (let j = i + 1; j < arrive.length; j++) pushed += ease.out(seg(t, arrive[j], arrive[j] + 0.3));
+        const y = TOP + pushed * SLOT + (1 - enter) * -60 + sweep * 1100;
+        const s = (1 - pushed * 0.02) * (0.92 + 0.08 * enter);
+        const fadeDeep = 1 - clamp((pushed - 3.6) / 1.2);
+        el.style.opacity = (t < a ? 0 : enter * fadeDeep * (1 - sweep)).toFixed(3);
+        el.style.transform = `translateY(${y.toFixed(1)}px) scale(${s.toFixed(4)})`;
+        el.style.zIndex = String(10 + i);
+      });
+      const arrived = arrive.filter((a) => t >= a).length;
+      countTxt.textContent = `${Math.round(12 + (88 * arrived) / arrive.length)} new messages`;
+      count.style.opacity = (1 - ease.out(seg(t, 3.85, 4.2))).toFixed(3);
+    },
+  });
+})();
+</script>
+</body>
+</html>

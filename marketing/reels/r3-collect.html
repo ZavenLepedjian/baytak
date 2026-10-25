@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Baytak Reel: Stamp It Paid</title>
+<link rel="stylesheet" href="kit.css">
+<style>
+#h1 { top: 200px; animation: rise .5s var(--e-out) .1s both; }
+.head { position: absolute; left: 72px; top: 430px; width: 936px; animation: rise .5s var(--e-out) .35s both; }
+.head .hl { font-size: 54px; line-height: 64px; font-weight: 700; }
+.head .sub { margin-top: 4px; font-size: 38px; line-height: 50px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.grid { position: absolute; left: 72px; top: 600px; width: 936px; display: grid; grid-template-columns: repeat(4, 213px); column-gap: 28px; row-gap: 20px; }
+.cell { position: relative; height: 160px; animation: rise .45s var(--e-out) var(--in) both; --dy: 24px; }
+.cell .plate { position: absolute; left: 0; top: 0; width: 213px; height: 100px; font-size: 56px; }
+.cell .plate.paper { border-color: var(--verdigris); }
+.cell .plate.paper.anim { animation: plateSettle .5s linear var(--d) both; }
+.cell .st { position: absolute; left: 0; right: 0; top: 116px; display: flex; justify-content: center; }
+.cell .stamp { font-size: 24px; line-height: 30px; padding: 4px 14px; gap: 8px; border-width: 3px; border-radius: 6px; letter-spacing: 1.6px; }
+.cell .stamp .ico { font-size: 28px; }
+.cell .st.unpaid.anim { animation: fadeOut .1s ease var(--d) forwards; }
+.cell .st.paid { opacity: 1; }
+.cell .st.paid.anim .stamp { animation: stampLand .5s linear var(--d) both; }
+.cell .tap { left: 106px; top: 50px; }
+.finale { position: absolute; left: 0; right: 0; top: 930px; display: flex; justify-content: center; z-index: 20; }
+.finale .stamp { font-size: 74px; line-height: 88px; padding: 16px 40px; gap: 20px; border-width: 7px; border-radius: 12px; letter-spacing: 4px; box-shadow: 0 20px 50px rgba(46,107,31,.25); --r: -6deg; animation: stampLand .6s linear 5.05s both; }
+.finale .stamp .ico { font-size: 84px; stroke-width: 2.4; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage" style="--end: 8s" role="img" aria-label="Reel: twenty door plates on five floors are stamped Paid one after another until the headline reads Everyone has paid.">
+  <h2 class="hook" id="h1">Watch a whole building <em>pay up.</em></h2>
+  <div class="head"><div class="hl" id="hl">4 of 20 apartments have paid</div><div class="sub" id="sub">Collected 300 USD of 1,500 USD</div></div>
+  <div class="grid" id="grid"></div>
+  <div class="finale"><span class="stamp paid"><svg class="ico"><use href="#i-done"/></svg>Everyone has paid</span></div>
+</div>
+<script src="kit.js"></script>
+<script>
+(() => {
+  const PRICE = 75, FLOORS = 5;
+  const initiallyPaid = new Set(['5B', '4D', '2A', '1C']);
+  const order = [];
+  for (let f = FLOORS; f >= 1; f--) for (const l of 'ABCD') if (!initiallyPaid.has(`${f}${l}`)) order.push(`${f}${l}`);
+  const gaps = [0, .5, .42, .36, .31, .27, .24, .21, .19, .17, .16, .15, .14, .13, .12, .12];
+  const at = {};
+  let clock = 1.1;
+  order.forEach((n, i) => { clock += gaps[i]; at[n] = +clock.toFixed(2); });
+  const done = Kit.icon('done'), ring = Kit.icon('ring');
+  let html = '', i = 0;
+  for (let f = FLOORS; f >= 1; f--) {
+    for (const l of 'ABCD') {
+      const n = `${f}${l}`, inT = (0.3 + i * 0.025).toFixed(3);
+      if (initiallyPaid.has(n)) {
+        html += `<div class="cell" style="--in:${inT}s"><div class="plate big paper">${n}</div><div class="st paid"><span class="stamp paid">${done}Paid</span></div></div>`;
+      } else {
+        const d = at[n];
+        html += `<div class="cell" style="--in:${inT}s;--d:${d}s"><div class="plate big">${n}</div><div class="plate big paper anim">${n}</div>` +
+          `<div class="st unpaid anim"><span class="stamp unpaid">${ring}Unpaid</span></div><div class="st paid anim"><span class="stamp paid">${done}Paid</span></div>` +
+          `<div class="tap" style="--d:${(d - 0.06).toFixed(2)}s"></div></div>`;
+      }
+      i++;
+    }
+  }
+  document.getElementById('grid').innerHTML = html;
+  const times = Object.values(at);
+  const hl = document.getElementById('hl'), sub = document.getElementById('sub');
+  const count = FLOORS * 4;
+
+  Kit.init({
+    title: 'Baytak Reel: stamp it paid',
+    duration: 11,
+    update(t) {
+      const paid = initiallyPaid.size + times.filter((s) => t >= s).length;
+      hl.textContent = paid === count ? 'Everyone has paid' : `${paid} of ${count} apartments have paid`;
+      sub.textContent = `Collected ${Kit.fmt(paid * PRICE)} USD of ${Kit.fmt(count * PRICE)} USD`;
+    },
+  });
+})();
+</script>
+</body>
+</html>

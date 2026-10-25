@@ -1,0 +1,205 @@
+/* Baytak reels kit: the app's theme.ts tokens, its components drawn at stage scale, and one clock.
+   Every reel is a fixed 1080x1920 stage; phone screens are built at 390x844 app points and scaled. */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap");
+
+/* ---------- Viewer chrome (around the stage) ---------- */
+:root {
+  --page: #E1EAE9; --page-ink: #05302E; --page-muted: #3F5654; --page-rule: #A9BDBB;
+  --ctl: #FFFFFF; --ctl-ink: #00847C;
+  --font: "IBM Plex Sans Arabic", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --page: #031A19; --page-ink: #EAF6F5; --page-muted: #A9BDBB; --page-rule: #1F5552; --ctl: #006B65; --ctl-ink: #D3EFEC; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --page: #031A19; --page-ink: #EAF6F5; --page-muted: #A9BDBB; --page-rule: #1F5552; --ctl: #006B65; --ctl-ink: #D3EFEC; color-scheme: dark; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--page); color: var(--page-ink); font-family: var(--font); }
+.viewer { min-height: 100%; display: flex; flex-direction: column; align-items: center; gap: 14px; padding-block: 16px; padding-inline: 16px; box-sizing: border-box; }
+.top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.top h1 { margin: 0; font-size: 17px; font-weight: 600; }
+.top p { margin: 0; font-size: 13px; color: var(--page-muted); }
+.stage-wrap { position: relative; flex: none; border-radius: 10px; overflow: hidden; box-shadow: 0 12px 40px rgba(5,48,46,.22); }
+.controls, .top { width: var(--w, 360px); max-width: 100%; box-sizing: border-box; }
+.controls { display: flex; align-items: center; gap: 10px; }
+.controls button { flex: none; width: 40px; height: 40px; border-radius: 8px; border: 1.5px solid var(--page-rule); background: var(--ctl); color: var(--ctl-ink); display: grid; place-items: center; cursor: pointer; }
+.controls button:focus-visible, .scrub:focus-visible { outline: 2px solid var(--ctl-ink); outline-offset: 2px; }
+.controls svg { width: 18px; height: 18px; }
+.scrub { flex: 1; min-width: 0; accent-color: var(--ctl-ink); height: 40px; margin: 0; }
+.clock { flex: none; font-size: 13px; color: var(--page-muted); font-variant-numeric: tabular-nums; min-width: 78px; text-align: end; }
+html.export, html.export body { background: #05302E; overflow: hidden; }
+html.export .viewer { padding: 0; gap: 0; }
+html.export .top, html.export .controls { display: none; }
+html.export .stage-wrap { border-radius: 0; box-shadow: none; }
+/* Carousel: a 4:5 stage of static slides; slide i shows while the clock is in [i, i+1) */
+.stage.portrait { height: 1350px; }
+.stage .slide { position: absolute; inset: 0; visibility: hidden; }
+.stage .slide.on { visibility: visible; }
+
+/* ---------- Stage ---------- */
+.stage {
+  --ink: #00847C; --ink-dark: #006B65; --ink-deep: #05302E; --ink-soft: #D3EFEC; --ink-tint: #EAF6F5;
+  --paper: #EEF4F3; --slip: #FFFFFF; --paper-muted: #E1EAE9; --rule: #D0DDDC; --rule-strong: #A9BDBB;
+  --border-input: #6F8583; --text: #0B2625; --text-muted: #3F5654; --text-faint: #5B706E;
+  --verdigris: #2E6B1F; --verdigris-wash: #E3F1DB; --vermilion: #B3321B; --vermilion-wash: #FBE3DC;
+  --amber: #8A5A00; --amber-wash: #FBEFD0; --brass: #B8913F; --plate-text: #F2FBFA;
+  --logo: url("../../assets/adaptive-icon.png");
+  --e-out: cubic-bezier(.16, 1, .3, 1); --e-in: cubic-bezier(.55, 0, .75, .2); --e-io: cubic-bezier(.65, 0, .35, 1);
+  --end: 99s;
+  position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; transform-origin: 0 0;
+  background: var(--paper); color: var(--text); font-family: var(--font); -webkit-font-smoothing: antialiased;
+}
+.stage, .stage * { box-sizing: border-box; animation-play-state: paused !important; }
+.stage .layer { position: absolute; inset: 0; }
+.ico { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.num { font-weight: 700; font-variant-numeric: tabular-nums; }
+.js { will-change: transform, opacity; }
+
+/* Headline type at stage scale */
+.hook { position: absolute; left: 72px; width: 936px; margin: 0; font-size: 92px; line-height: 98px; font-weight: 700; letter-spacing: -1px; text-wrap: balance; }
+.hook.light { color: #fff; }
+.hook em { font-style: normal; color: var(--ink); }
+.hook.light em { color: var(--ink-soft); }
+.say { position: absolute; left: 72px; width: 936px; margin: 0; font-size: 44px; line-height: 58px; color: var(--text-muted); text-wrap: balance; }
+.say.light { color: rgba(255,255,255,.85); }
+.say b { color: var(--text); font-weight: 600; }
+
+/* ---------- Keyframes ---------- */
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes fadeOut { from { opacity: 1 } to { opacity: 0 } }
+@keyframes rise { from { opacity: 0; transform: translateY(var(--dy, 44px)) } to { opacity: 1; transform: none } }
+@keyframes sink { from { opacity: 1; transform: none } to { opacity: 0; transform: translateY(calc(var(--dy, 44px) * -.6)) } }
+@keyframes gone { to { visibility: hidden } }
+@keyframes show { from { opacity: 1 } to { opacity: 1 } }
+@keyframes hide { from { opacity: 0 } to { opacity: 0 } }
+@keyframes spin { to { transform: rotate(360deg) } }
+@keyframes blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
+@keyframes phoneUp { from { transform: translateY(1500px) } to { transform: none } }
+@keyframes phoneDown { from { transform: none } to { transform: translateY(1500px) } }
+@keyframes sheetUp { from { transform: translateY(100%) } to { transform: none } }
+@keyframes sheetDown { from { transform: none } to { transform: translateY(100%) } }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-120%) } to { opacity: 1; transform: none } }
+@keyframes tap {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.45) }
+  25% { opacity: 1; transform: translate(-50%, -50%) scale(1) }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.55) }
+}
+@keyframes press { 0%, 100% { filter: none; transform: none } 30%, 60% { filter: brightness(.78); transform: scale(.985) } }
+@keyframes printIn {
+  from { clip-path: inset(-30px -30px calc(100% + 30px) -30px); transform: translateY(-14px) }
+  to { clip-path: inset(-30px -30px -30px -30px); transform: none }
+}
+/* The app's Stamp settle: fades in over ~120ms and springs from 1.45x to 1, set at -3deg. */
+@keyframes stampLand {
+  0% { opacity: 0; transform: rotate(var(--r, -3deg)) scale(1.45) }
+  18% { opacity: 1 }
+  42% { transform: rotate(var(--r, -3deg)) scale(.95) }
+  64% { transform: rotate(var(--r, -3deg)) scale(1.02) }
+  82% { transform: rotate(var(--r, -3deg)) scale(.995) }
+  100% { opacity: 1; transform: rotate(var(--r, -3deg)) scale(1) }
+}
+@keyframes plateSettle {
+  0% { opacity: 0; transform: scale(1.18) } 12% { opacity: 1 } 45% { transform: scale(.96) } 70% { transform: scale(1.012) } 100% { opacity: 1; transform: scale(1) }
+}
+@keyframes shake { 0%, 100% { transform: none } 15% { transform: translateX(-18px) } 35% { transform: translateX(15px) } 55% { transform: translateX(-10px) } 75% { transform: translateX(6px) } }
+@keyframes stemDrop { 0% { opacity: 0; transform: translateY(-520px) } 20% { opacity: 1 } 68% { transform: translateY(12px) } 84% { transform: translateY(-3px) } 100% { opacity: 1; transform: none } }
+@keyframes bowlStamp { 0% { opacity: 0; transform: scale(1.45) rotate(-7deg) } 18% { opacity: 1 } 42% { transform: scale(.95) rotate(1deg) } 64% { transform: scale(1.02) rotate(0deg) } 82% { transform: scale(.995) } 100% { opacity: 1; transform: none } }
+
+/* ---------- Corner brand bug: the logo file cropped to its own bounds ---------- */
+.bug { position: absolute; z-index: 80; left: 64px; top: 64px; display: flex; align-items: center; gap: 16px; font-size: 46px; line-height: 1; font-weight: 700; letter-spacing: -.3px; color: var(--ink-deep); animation: fadeOut .25s ease var(--end) forwards; }
+.bug.light { color: #fff; }
+.bug .mark { width: 45px; height: 76px; flex: none; background: var(--logo) no-repeat -36.7px -17px / 112px 112px; }
+.bug.light .mark { width: 84px; height: 84px; border-radius: 18px; background: #fff var(--logo) 50% 50% / 112% no-repeat; }
+
+/* ---------- End card: white, the logo lands like a stamp, then the lockup ---------- */
+.endcard { position: absolute; inset: 0; z-index: 90; background: #fff; opacity: 0; animation: fadeIn .35s ease var(--end) forwards; }
+.endcard .logo { position: absolute; left: 223px; top: 300px; width: 600px; height: 600px; }
+.endcard .part { position: absolute; inset: 0; background: var(--logo) center / 100% 100% no-repeat; }
+.endcard .stem { clip-path: polygon(29.30% 11.72%, 45.51% 11.72%, 45.51% 35.25%, 45.02% 35.64%, 44.43% 35.94%, 42.97% 36.52%, 41.02% 37.60%, 39.06% 39.06%, 37.11% 40.92%, 35.16% 43.26%, 33.69% 45.90%, 33.01% 47.56%, 29.30% 49.32%); animation: stemDrop .6s var(--e-out) calc(var(--end) + .2s) both; }
+.endcard .bowl { clip-path: polygon(45.51% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 49.32%, 29.30% 49.32%, 33.01% 47.56%, 33.69% 45.90%, 35.16% 43.26%, 37.11% 40.92%, 39.06% 39.06%, 41.02% 37.60%, 42.97% 36.52%, 44.43% 35.94%, 45.02% 35.64%, 45.51% 35.25%); transform-origin: 52.8% 58.8%; animation: bowlStamp .7s linear calc(var(--end) + .5s) both; }
+.endcard p { position: absolute; left: 0; right: 0; margin: 0; text-align: center; }
+.endcard .wm { top: 840px; font-size: 156px; line-height: 1.1; font-weight: 700; letter-spacing: -2px; color: var(--ink-deep); animation: rise .6s var(--e-out) calc(var(--end) + 1s) both; }
+.endcard .tag { top: 1040px; font-size: 62px; line-height: 1.2; font-weight: 600; color: var(--ink); animation: rise .6s var(--e-out) calc(var(--end) + 1.2s) both; }
+.endcard .handle { top: 1160px; font-size: 42px; line-height: 1.3; color: var(--text-muted); animation: rise .6s var(--e-out) calc(var(--end) + 1.4s) both; }
+.endcard .handle bdi { font-weight: 700; color: var(--ink); }
+
+/* ---------- Phone ---------- */
+.phone { position: absolute; left: var(--px, 208px); top: var(--py, 560px); width: calc(410px * var(--ps, 1.62)); height: calc(864px * var(--ps, 1.62)); }
+.phone-in { width: 410px; height: 864px; transform: scale(var(--ps, 1.62)); transform-origin: 0 0; padding: 10px; border-radius: 62px; background: #07201F; box-shadow: inset 0 0 0 2px #1D4B48, 0 24px 50px rgba(5,48,46,.26), 0 6px 14px rgba(5,48,46,.16); }
+.screen { position: relative; width: 390px; height: 844px; border-radius: 52px; overflow: hidden; background: var(--paper); font-size: 16px; line-height: 23px; color: var(--text); }
+.island { position: absolute; z-index: 60; top: 11px; left: 50%; width: 120px; height: 35px; margin-left: -60px; border-radius: 20px; background: #000; }
+.scr { position: absolute; inset: 0; background: var(--paper); }
+.sb { position: absolute; z-index: 40; top: 0; left: 0; right: 0; height: 47px; display: flex; align-items: center; justify-content: space-between; padding: 6px 30px 0 40px; font-size: 16px; font-weight: 600; color: var(--text); }
+.sb.light { color: #fff; }
+.sb .sbi { display: flex; align-items: center; gap: 6px; }
+.sb .sbi svg { height: 12px; width: 18px; fill: currentColor; }
+.sb .batt { width: 25px; height: 12px; border: 1.4px solid currentColor; border-radius: 4px; padding: 1.5px; position: relative; }
+.sb .batt::after { content: ""; position: absolute; right: -4px; top: 3.5px; width: 2px; height: 4px; border-radius: 0 2px 2px 0; background: currentColor; }
+.sb .batt i { display: block; height: 100%; width: 78%; border-radius: 2px; background: currentColor; }
+.nav { position: absolute; top: 47px; left: 0; right: 0; height: 44px; display: flex; align-items: center; justify-content: center; }
+.nav .back { position: absolute; left: 10px; top: 8px; font-size: 28px; color: var(--ink); }
+
+/* App type roles (app points) */
+.t-display { font-size: 30px; line-height: 38px; font-weight: 700; }
+.t-title { font-size: 22px; line-height: 30px; font-weight: 700; }
+.t-heading { font-size: 17px; line-height: 24px; font-weight: 600; }
+.t-bs { font-size: 16px; line-height: 23px; font-weight: 600; }
+.t-body { font-size: 16px; line-height: 23px; }
+.t-cap { font-size: 14px; line-height: 20px; }
+.muted { color: var(--text-muted); }
+.card { background: var(--slip); border-radius: 10px; box-shadow: 0 2px 5px rgba(5,48,46,.08); }
+.div { height: 1px; background: var(--rule); }
+.btn { height: 52px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 600; position: relative; }
+.btn .ico { font-size: 20px; }
+.btn.primary { background: var(--ink); color: #fff; }
+.btn.secondary { background: var(--ink-soft); color: var(--ink-deep); }
+.btn.ghost { color: var(--ink); }
+.btn.off { opacity: .45; }
+.tap { position: absolute; z-index: 70; width: 64px; height: 64px; border-radius: 50%; background: rgba(5,48,46,.18); box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 0 0 5px rgba(5,48,46,.25); opacity: 0; animation: tap .55s var(--e-out) var(--d) both; pointer-events: none; }
+.tap.big { width: 120px; height: 120px; }
+.field .lbl { font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+.field .box { height: 52px; border: 1.5px solid var(--border-input); border-radius: 8px; padding: 0 14px; display: flex; align-items: center; gap: 10px; background: #fff; }
+.field .box .ico { font-size: 20px; color: var(--text-muted); }
+.field .ph { color: var(--text-faint); }
+.field .val { font-variant-numeric: tabular-nums; }
+.field .caret { width: 2px; height: 22px; margin-left: -8px; background: var(--ink); display: none; animation: blink 1s steps(1) infinite; }
+.field.focus .box { border-color: var(--ink); }
+.field.focus .caret { display: block; }
+.field.filled .ph { display: none; }
+.toast { position: absolute; z-index: 35; top: 55px; left: 12px; right: 12px; min-height: 52px; padding: 12px 14px; border-radius: 10px; color: #fff; display: flex; align-items: center; gap: 10px; font-weight: 600; box-shadow: 0 6px 12px rgba(5,48,46,.16); }
+.toast.success { background: var(--verdigris); }
+.toast .ico { font-size: 22px; }
+
+/* Door plate (app points; .xl variants are stage scale) */
+.plate { position: relative; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1.5px solid var(--ink-deep); background: var(--ink); color: var(--plate-text); font-weight: 700; font-variant-numeric: tabular-nums; }
+.plate::before { content: ""; position: absolute; inset: 3px; border: 1px solid var(--brass); border-radius: 4px; pointer-events: none; }
+.plate.paper { background: #fff; border-color: var(--ink); color: var(--ink-deep); }
+.plate.paper::before { border-color: var(--rule-strong); }
+.plate.paid { border-color: var(--verdigris); }
+.plate.lg { min-width: 76px; height: 58px; padding: 0 12px; font-size: 30px; line-height: 36px; }
+/* Stage-scale plate: set width, height and font-size where used */
+.plate.big { border-width: 3px; border-radius: 14px; line-height: 1; }
+.plate.big::before { inset: 7px; border-width: 2px; border-radius: 8px; }
+@keyframes pushIn { from { transform: translateX(100%) } to { transform: none } }
+@keyframes pushOut { from { transform: none } to { transform: translateX(-30%) } }
+
+/* Rubber stamp */
+.stamp { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 2px solid; border-radius: 4px; transform: rotate(-3deg); font-size: 13px; line-height: 16px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
+.stamp .ico { font-size: 16px; stroke-width: 2.2; }
+.stamp.unpaid { color: var(--vermilion); background: var(--vermilion-wash); border-color: var(--vermilion); }
+.stamp.paid { color: var(--verdigris); background: var(--verdigris-wash); border-color: var(--verdigris); }
+
+/* Receipt slip (app points; scale with a wrapper) */
+.slipcard .st { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; }
+.slipcard .sb2 { padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; }
+.slipcard .line { display: flex; justify-content: space-between; gap: 12px; }
+.slipcard .line .num { font-weight: 400; }
+.slipcard .tot { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; }
+.slipcard .tot .num { font-size: 20px; line-height: 28px; }
+
+/* iOS-style notification (app points) */
+.notif { padding: 13px 14px; border-radius: 22px; background: rgba(255,255,255,.92); display: flex; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); color: #05302E; font-size: 15px; line-height: 20px; }
+.notif .appicon { width: 40px; height: 40px; flex: none; border-radius: 10px; background: #fff var(--logo) center / 112% no-repeat; box-shadow: inset 0 0 0 1px rgba(5,48,46,.12); }
+.notif .appicon.chat { background: #C9CCD8; display: grid; place-items: center; color: #fff; font-size: 24px; box-shadow: none; }
+.notif .nt { flex: 1; min-width: 0; }
+.notif .nt-top { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); }
+.notif b { font-weight: 600; }

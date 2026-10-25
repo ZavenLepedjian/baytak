@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Baytak Reel: What Do I Owe</title>
+<link rel="stylesheet" href="kit.css">
+<style>
+#h1 { top: 200px; animation: rise .5s var(--e-out) .1s both, sink .35s var(--e-in) 5.4s forwards; }
+#h2 { top: 200px; animation: rise .5s var(--e-out) 5.8s both; }
+.verdict { position: absolute; left: 72px; top: 450px; width: 936px; }
+.verdict div { font-size: 62px; line-height: 84px; color: var(--text-muted); white-space: nowrap; }
+.verdict .num { font-size: 74px; color: var(--text); }
+.verdict .cur { font-weight: 600; }
+#vA { animation: rise .45s var(--e-out) 1s both, sink .3s var(--e-in) 3.55s forwards; }
+#vB { animation: rise .45s var(--e-out) 3.75s both, sink .3s var(--e-in) 4.7s forwards; }
+#vC { animation: rise .5s var(--e-out) 4.9s both; }
+#vC .done { font-size: 84px; line-height: 96px; font-weight: 700; color: var(--text); }
+#vC .sub { font-size: 40px; line-height: 54px; color: var(--text-muted); white-space: normal; }
+.zoom { position: absolute; left: 94px; width: 470px; transform: scale(1.9); transform-origin: 0 0; }
+#s1 { top: 700px; } #s2 { top: 1110px; }
+#s1 .card { animation: printIn .6s var(--e-out) 1.6s both; }
+#s2 .card { animation: printIn .6s var(--e-out) 1.85s both; }
+.st .stamps { position: relative; display: grid; justify-items: end; }
+.st .stamps > * { grid-area: 1 / 1; }
+#s1 .stamp.unpaid { animation: fadeOut .1s ease 3.6s forwards; }
+#s1 .stamp.paid { animation: stampLand .55s linear 3.6s both; }
+#s2 .stamp.unpaid { animation: fadeOut .1s ease 4.75s forwards; }
+#s2 .stamp.paid { animation: stampLand .55s linear 4.75s both; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage" style="--end: 8s" role="img" aria-label="Reel: Do I owe anything this month? The answer reads You owe 75 USD and 2,225,000 LBP, with the two receipts below. Both are stamped Paid and the answer becomes You're all paid up.">
+  <h2 class="hook" id="h1">&ldquo;Do I owe anything <em>this month?&rdquo;</em></h2>
+  <h2 class="hook" id="h2">Always know <em>where you stand.</em></h2>
+  <div class="verdict" id="vA"><div>You owe <span class="num">75</span><span class="cur"> USD</span></div><div>and <span class="num">2,225,000</span><span class="cur"> LBP</span></div></div>
+  <div class="verdict" id="vB"><div>You owe <span class="num">2,225,000</span><span class="cur"> LBP</span></div></div>
+  <div class="verdict" id="vC"><div class="done">You're all paid up</div><div class="sub">Nothing is due.</div></div>
+
+  <div class="zoom" id="s1">
+    <div class="card slipcard">
+      <div class="st"><span class="t-bs">Oct 1, 2026</span><span class="stamps"><span class="stamp unpaid"><svg class="ico"><use href="#i-ring"/></svg>Unpaid</span><span class="stamp paid"><svg class="ico"><use href="#i-done"/></svg>Paid</span></span></div>
+      <div class="div"></div>
+      <div class="sb2">
+        <div class="line"><span class="muted">Maintenance</span><span class="num">25</span></div>
+        <div class="line"><span class="muted">Electricity</span><span class="num">40</span></div>
+        <div class="line"><span class="muted">Elevator</span><span class="num">10</span></div>
+      </div>
+      <div class="div"></div>
+      <div class="tot"><span class="t-bs">Total</span><span class="num">75 USD</span></div>
+    </div>
+  </div>
+  <div class="zoom" id="s2">
+    <div class="card slipcard">
+      <div class="st"><span class="t-bs">Sep 1, 2026</span><span class="stamps"><span class="stamp unpaid"><svg class="ico"><use href="#i-ring"/></svg>Unpaid</span><span class="stamp paid"><svg class="ico"><use href="#i-done"/></svg>Paid</span></span></div>
+      <div class="div"></div>
+      <div class="sb2"><div class="line"><span class="muted">Generator</span><span class="num">2,225,000</span></div></div>
+      <div class="div"></div>
+      <div class="tot"><span class="t-bs">Total</span><span class="num">2,225,000 LBP</span></div>
+    </div>
+  </div>
+</div>
+<script src="kit.js"></script>
+<script>
+Kit.init({ title: 'Baytak Reel: what do I owe?', duration: 11 });
+</script>
+</body>
+</html>
