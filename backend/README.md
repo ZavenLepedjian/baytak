@@ -243,3 +243,25 @@ Reviewed against OWASP ASVS / API Security Top 10 and OWASP MASVS (mobile).
 `deploy/setup-reviewer-demo.ps1` creates two demo accounts (administrator +961 70 000 001, resident +961 70 000 002) that sign in with a
 shared fixed code instead of an SMS, then a sample building with receipts. Run `-Phase accounts`, then `deploy/approve-demo-admin.ps1`
 (one SQL line, asks for the postgres password), then `-Phase seed`. The code is written to `deploy/reviewer-code.local.txt` (git-ignored).
+
+## Receipt photos and receipt templates
+
+An administrator can attach up to five photos of the bill to a receipt and start a receipt from a saved template.
+
+| Route | Who | What |
+| --- | --- | --- |
+| `POST receipt/photo` | administrator | Uploads one JPEG (raw bytes, at most 4 MB). Stored in the private container, tagged `status=pending`; returns `{ photoId }` |
+| `POST receipt/add` with `photoIds` | administrator | Claims the uploads for the new receipt (at most five, in order). A claimed photo is tagged `status=attached` |
+| `GET receipt/photo/{id}` | the building's administrator, or a resident the receipt was issued to | The image. Anyone else gets 404 |
+| `GET receipt/templates` | administrator | `{ templates, last }`: saved templates and the last receipt's lines and amounts |
+| `POST receipt/templates/save`, `receipt/templates/delete/{id}` | administrator | At most 20 per building, replaced by name |
+
+Receipts returned to the app carry `photoIds`. Photos live in the container `receipt-photos` of the storage account named by
+`Photos__ConnectionString`, or `AzureWebJobsStorage` when that is empty (`Photos__Container` renames the container). Run
+`deploy/setup-photo-storage.ps1` once: it creates the private container and a lifecycle rule that deletes uploads no receipt
+claimed after one day. Without a storage account the API still runs and refuses photo uploads.
+
+Do not name an Azure Functions route `admin/...`: the host reserves it and answers 404 before the function runs.
+
+Run `BAYTAK_TEST_BLOB="<storage connection string>" dotnet test --filter BlobPhotoStoreLiveTests` to check the real Blob store
+against a real account (it uses a temporary container and deletes it).

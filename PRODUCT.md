@@ -33,7 +33,7 @@ Building fees as a shared, trustworthy record between administrator and resident
 
 ## Capabilities and Constraints
 
-- Features in scope: phone login, profile with emergency contact, building and apartment registration, join-request approval, receipt format, issuing receipts (to everyone or selected apartments), per-apartment payment status, receipt history, push notifications, personal wallet (USD + LBP ledger with add/edit/delete), account deletion.
+- Features in scope: phone login, profile with emergency contact, building and apartment registration, join-request approval, receipt format, issuing receipts (to everyone or selected apartments; any lines, in USD or LBP per receipt; start from the building format, the last receipt, a saved template or a starter; up to five photos of the bill), per-apartment payment status, receipt history, push notifications, personal wallet (USD + LBP ledger with add/edit/delete), account deletion.
 - Roles: `User` and `Admin`; an administrator account is usable as admin only once `Approved`.
 - Technical: Expo SDK 57, React Native 0.86 (new architecture), React Navigation (bottom tabs + native stack), light mode only (`userInterfaceStyle: light`), backend in `backend/` (.NET 10 Azure Functions). Maps use `react-native-maps`; an Android Google Maps API key is not configured yet.
 - Terminology to keep: "Building", "Apartment", "Receipt", "Join request", "Receipt format". Public API routes keep the legacy "Appartment" spelling; user-facing copy uses "Apartment".

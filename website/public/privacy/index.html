@@ -79,6 +79,7 @@
   <div><dt>Profile (optional)</dt><dd>Your first and last name, and an emergency contact's name and phone number.</dd></div>
   <div><dt>Your home</dt><dd>Your building, apartment number, floor and a short apartment description.</dd></div>
   <div><dt>Receipts</dt><dd>Amounts, currency (USD or LBP), dates, notes written by your administrator, and whether each receipt is paid.</dd></div>
+  <div><dt>Photos of bills (administrators)</dt><dd>Photos an administrator chooses to attach to a receipt, up to five per receipt, taken with the camera or picked from the photo library. The app shrinks each photo and removes its metadata, including where it was taken, before uploading it. Only the building's administrator and the residents the receipt was issued to can see them.</dd></div>
   <div><dt>Location</dt><dd>If you allow location access, your phone's location when you sign in. We keep your most recent location to show the buildings nearest to you. Administrators also set their building's location on a map.</dd></div>
   <div><dt>Notifications</dt><dd>A push notification token for your device, removed when you sign out.</dd></div>
   <div><dt>Personal wallet (optional)</dt><dd>The income and expense entries you add yourself.</dd></div>
@@ -87,11 +88,12 @@
 <p>We do not collect payment card details, government identifiers or passwords. We do not store your sign-in codes: a code is sent to your phone and checked by our verification provider.</p>
 
 <h2 id="why">Why we use it</h2>
-<p>To sign you in, show you your receipts and what you owe, let your administrator issue receipts and record payments, notify you about receipts and join requests, show nearby buildings, keep the service secure and fix problems. If that ever changes, we will update this policy first and tell you in the app.</p>
+<p>To sign you in, show you your receipts and what you owe, let your administrator issue receipts, with photos of the bill if they add any, and record payments, notify you about receipts and join requests, show nearby buildings, keep the service secure and fix problems. If that ever changes, we will update this policy first and tell you in the app.</p>
 
 <h2 id="receive">Who receives it</h2>
 <ul>
   <li><strong>Your building administrator</strong> sees your name, phone number, apartment, emergency contact and payment status.</li>
+  <li><strong>Residents</strong> who are issued a receipt can see the photos the administrator attached to it.</li>
   <li><strong>Service providers</strong> process data for us: Microsoft Azure (hosting, database and logs, in the EU, North Europe region), Twilio (sending and checking sign-in codes for your phone number) and Expo (delivering push notifications).</li>
   <li><strong>ChatGPT (OpenAI)</strong>, only if you connect Baytak to it. Baytak then sends ChatGPT the results of the Baytak tools used in your conversation: your apartment, receipts and payment status. For administrators, that also includes residents' names, apartment numbers and payment status in their building. Baytak never sends phone numbers or emergency contacts to ChatGPT, and does not receive your ChatGPT conversations, only the requests ChatGPT makes to Baytak's tools. OpenAI handles that data under its own privacy policy. See <a href="/chatgpt/">Baytak in ChatGPT</a>.</li>
   <li><strong>Authorities</strong>, when the law requires it.</li>
@@ -101,6 +103,7 @@
 <ul>
   <li><strong>Sign-in code records:</strong> deleted after 2 days.</li>
   <li><strong>Account, apartment and receipt data:</strong> until you delete your account or your administrator removes your apartment.</li>
+  <li><strong>Photos of bills:</strong> kept with the receipt they belong to. A photo uploaded but never attached to a receipt is deleted after 1 day.</li>
   <li><strong>Technical logs:</strong> 90 days.</li>
   <li><strong>ChatGPT connection:</strong> access lasts 1 hour at a time, and a connection ends after at most 30 days, or when you sign out of Baytak.</li>
 </ul>
@@ -109,7 +112,7 @@
 <ul>
   <li>Edit your profile in the app.</li>
   <li>Delete your account in the app: open Account, then choose Delete account. This removes your personal data. <a href="/delete-account/">Details</a>.</li>
-  <li>Turn off location or notifications for Baytak in your phone's settings at any time.</li>
+  <li>Turn off location, notifications, camera or photo access for Baytak in your phone's settings at any time. Baytak only opens the camera or your photo library when an administrator adds a photo to a receipt, and reads only the photos chosen.</li>
   <li>Disconnect Baytak in ChatGPT's settings, or sign out of the Baytak app to end every session, ChatGPT's included.</li>
   <li>Ask us for a copy of your data, or for a correction, at <a href="mailto:zavenlepedjian@outlook.com?subject=Baytak%20support">zavenlepedjian@outlook.com</a>.</li>
 </ul>

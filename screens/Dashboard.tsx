@@ -19,6 +19,7 @@ import {
   Text,
   toPaymentState,
 } from '../components/ui';
+import { ReceiptPhotoStrip } from '../components/ReceiptPhotos';
 import { currencyLabel, formatAmount, formatDate, formatMoney, ordinalFloor, parseReceipt, ParsedReceipt } from '../functions/format';
 import { useFetch } from '../hooks/useFetch';
 import type { RootStackParamList } from '../navigation/types';
@@ -32,6 +33,8 @@ export type ReceiptItem = {
   totalPayment?: number;
   currency?: string;
   appartment?: { appartmentNumber?: string; floor?: number; appartmentDescription?: string } | null;
+  /** Photos of the bill the receipt is based on, attached by the administrator. */
+  photoIds?: string[];
   parsed: ParsedReceipt;
 };
 
@@ -386,6 +389,7 @@ export function ReceiptBreakdown({ item }: { item: ReceiptItem }) {
           </Text>
         </View>
       ))}
+      <ReceiptPhotoStrip ids={item.photoIds ?? []} />
     </View>
   );
 }

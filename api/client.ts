@@ -21,6 +21,8 @@ export type RequestOptions = {
   /** Append the Azure Functions key. Anonymous auth endpoints are called without it. */
   withKey?: boolean;
   timeoutMs?: number;
+  /** Content type of a binary `body` (a Blob, e.g. a photo). JSON bodies need none. */
+  contentType?: string;
 };
 
 const NETWORK_ERROR = 'Unable to reach the server. Check your connection and try again.';
@@ -48,7 +50,7 @@ function fail(status: number, error: string, extra?: Partial<ApiFailure>): ApiFa
 }
 
 export async function apiRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<ApiResult<T>> {
-  const { method = 'GET', body, token, signal, withKey = true, timeoutMs = REQUEST_TIMEOUT_MS } = options;
+  const { method = 'GET', body, token, signal, withKey = true, timeoutMs = REQUEST_TIMEOUT_MS, contentType } = options;
 
   const url = buildUrl(API_BASE_URL, path, withKey ? API_KEY : undefined);
 
@@ -65,13 +67,14 @@ export async function apiRequest<T = unknown>(path: string, options: RequestOpti
   }
 
   try {
-    const headers: Record<string, string> = { Accept: 'application/json', 'Content-Type': 'application/json' };
+    const binary = typeof Blob !== 'undefined' && body instanceof Blob;
+    const headers: Record<string, string> = { Accept: 'application/json', 'Content-Type': binary && contentType ? contentType : 'application/json' };
     if (token) headers.Authorization = `Bearer ${token}`;
 
     const res = await fetch(url, {
       method,
       headers,
-      body: body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body),
+      body: body === undefined ? undefined : binary ? (body as Blob) : typeof body === 'string' ? body : JSON.stringify(body),
       signal: controller.signal,
     });
 

@@ -3,7 +3,7 @@
     "name": "Baytak",
     "slug": "bms",
     "owner": "zavenlep",
-    "version": "1.7.0",
+    "version": "1.8.0",
     "orientation": "portrait",
     "icon": "./assets/adaptive-icon.png",
     "userInterfaceStyle": "light",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.baytak.bms",
-      "buildNumber": "17",
+      "buildNumber": "20",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "The Baytak App uses your location to help you find the closest buildings registered in the app near you."
@@ -28,7 +28,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.baytak.bms",
-      "versionCode": 15,
+      "versionCode": 20,
       "allowBackup": false
     },
     "web": {
@@ -59,7 +59,15 @@
         }
       ],
       "expo-status-bar",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Baytak lets you attach photos of a bill to a receipt you issue to your building.",
+          "cameraPermission": "Baytak uses the camera so you can photograph a bill and attach it to a receipt you issue.",
+          "microphonePermission": false
+        }
+      ]
     ]
   }
 }
