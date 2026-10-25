@@ -1,0 +1,118 @@
+{
+  "scenes": [
+    {
+      "type": "card",
+      "title": "Baytak in ChatGPT",
+      "lines": [
+        "Review walkthrough",
+        "Two demo accounts (administrator and resident), sample data only."
+      ],
+      "seconds": 5
+    },
+    {
+      "image": "connect.jpg",
+      "caption": "Connect Baytak: ChatGPT opens Baytak's own sign-in.",
+      "step": "Sign in",
+      "seconds": 4
+    },
+    {
+      "image": "signin.jpg",
+      "caption": "The reviewer signs in with a phone number and a 6-digit code, then allows ChatGPT access.",
+      "step": "Sign in",
+      "seconds": 5
+    },
+    {
+      "image": "accounts.jpg",
+      "caption": "Connected: a demo administrator and a demo resident. All data is sample data.",
+      "step": "Sign in",
+      "seconds": 5
+    },
+    {
+      "image": "res1.jpg",
+      "caption": "Resident: \"Do I owe anything for my building this month?\"",
+      "step": "Resident",
+      "seconds": 5
+    },
+    {
+      "image": "res2.jpg",
+      "caption": "USD and LBP are kept apart and never added together.",
+      "step": "Resident",
+      "seconds": 5
+    },
+    {
+      "image": "resneg.jpg",
+      "caption": "Out of scope: a resident cannot see another apartment's balance.",
+      "step": "Resident",
+      "seconds": 5
+    },
+    {
+      "image": "adm1.jpg",
+      "caption": "Administrator: \"Who hasn't paid the latest building receipt?\"",
+      "step": "Administrator",
+      "seconds": 5
+    },
+    {
+      "image": "adm2.jpg",
+      "caption": "Unpaid apartments with resident names, and collected against expected. Phone numbers are never shown.",
+      "step": "Administrator",
+      "seconds": 6
+    },
+    {
+      "image": "perm.jpg",
+      "caption": "A change asks for permission first: mark apartment 5A as paid.",
+      "step": "Administrator",
+      "seconds": 5
+    },
+    {
+      "image": "done1.jpg",
+      "caption": "The change is made and confirmed.",
+      "step": "Administrator",
+      "seconds": 4
+    },
+    {
+      "image": "done2.jpg",
+      "caption": "The collection summary is updated.",
+      "step": "Administrator",
+      "seconds": 4
+    },
+    {
+      "image": "prev1.jpg",
+      "caption": "Issuing a receipt starts with a preview. Nothing is issued yet.",
+      "step": "Administrator",
+      "seconds": 5
+    },
+    {
+      "image": "prev2.jpg",
+      "caption": "Receipts cannot be edited or deleted, so issuing needs an explicit confirmation.",
+      "step": "Administrator",
+      "seconds": 5
+    },
+    {
+      "image": "join.jpg",
+      "caption": "Join requests: approve or reject residents who ask to join the building.",
+      "step": "Administrator",
+      "seconds": 5
+    },
+    {
+      "image": "neg1.jpg",
+      "caption": "Out of scope: Baytak records fees and does not take payments.",
+      "step": "Out of scope",
+      "seconds": 5
+    },
+    {
+      "image": "neg2.jpg",
+      "caption": "Out of scope: issued receipts cannot be deleted. Nothing was changed.",
+      "step": "Out of scope",
+      "seconds": 5
+    },
+    {
+      "type": "card",
+      "title": "Baytak",
+      "lines": [
+        "Building fees, made clear.",
+        "baytakapi8803.z16.web.core.windows.net"
+      ],
+      "seconds": 5
+    }
+  ]
+}

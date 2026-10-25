@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'self'; font-src 'self'; script-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Baytak | Building fees, made clear</title>
+<meta name="description" content="Baytak lets a building administrator issue receipts and every resident see what they owe, in USD or LBP, and whether it is paid.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4f8f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#041312" media="(prefers-color-scheme: dark)">
+<meta property="og:site_name" content="Baytak">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Baytak | Building fees, made clear">
+<meta property="og:description" content="Baytak lets a building administrator issue receipts and every resident see what they owe, in USD or LBP, and whether it is paid.">
+<link rel="icon" href="/assets/img/favicon.png">
+<link rel="preload" href="/assets/fonts/plex-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/site.css">
+<script src="/assets/main.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/"><img src="/assets/img/baytak-logo.png" width="40" height="40" alt="">Baytak</a>
+    <nav class="nav" aria-label="Main"><ul>
+<li><a href="/#how">How it works</a></li>
+<li><a href="/#who">Who it is for</a></li>
+<li><a href="/chatgpt/">ChatGPT</a></li>
+<li><a href="/support/">Support</a></li>
+    </ul></nav>
+    <details class="menu">
+      <summary><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#list"/></svg>Menu</summary>
+      <ul>
+<li><a href="/#how">How it works</a></li>
+<li><a href="/#who">Who it is for</a></li>
+<li><a href="/chatgpt/">ChatGPT</a></li>
+<li><a href="/support/">Support</a></li>
+      </ul>
+    </details>
+  </div>
+</header>
+<main id="main">
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <h1 class="display" data-lines>
+        <span class="line"><span data-i="0">Building fees,</span></span>
+        <span class="line"><span data-i="1">made clear.</span></span>
+      </h1>
+      <div class="hero-low" data-reveal data-i="4">
+        <p class="lead">Your administrator issues a receipt. Every resident sees what they owe, in USD or LBP, and whether it is paid.</p>
+        <div class="hero-cta"><a class="btn btn-primary" href="#how">See how it works<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#arrow-down"/></svg></a></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <figure class="hero-photo">
+        <img src="/assets/img/beirut-1000.jpg" srcset="/assets/img/beirut-640.jpg 640w, /assets/img/beirut-1000.jpg 1000w"
+             sizes="(min-width: 961px) 36vw, 100vw" width="1000" height="1250" alt="A pedestrian street in downtown Beirut lined with sandstone apartment buildings, with a clock tower at the far end." fetchpriority="high">
+      </figure>
+      <aside class="slip" aria-label="Sample receipt">
+        <div class="slip-top"><span>Receipt</span><span>Apartment 3B</span></div>
+        <dl>
+          <div><dt>Maintenance</dt><dd>25.00 USD</dd></div>
+          <div><dt>Electricity</dt><dd>40.00 USD</dd></div>
+          <div class="total"><dt>Total</dt><dd>65.00 USD</dd></div>
+        </dl>
+        <span class="stamp stamp-paid"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#checks"/></svg>Paid</span>
+        <p class="slip-note">Sample receipt</p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<div class="marquee">
+  <p class="sr">One receipt can cover maintenance, electricity, security, the elevator, cleaning, water, the generator and repairs.</p>
+  <div class="marquee-track" aria-hidden="true"><span>Maintenance</span><span>Electricity</span><span>Security</span><span>Elevator</span><span>Cleaning</span><span>Water</span><span>Generator</span><span>Repairs</span><span>Maintenance</span><span>Electricity</span><span>Security</span><span>Elevator</span><span>Cleaning</span><span>Water</span><span>Generator</span><span>Repairs</span></div>
+</div>
+
+<section class="story" id="how" data-step="1">
+  <div class="story-pin">
+    <div class="wrap story-grid">
+      <div class="story-copy">
+        <h2>From one receipt to everyone paid.</h2>
+        <ol class="steps">
+          <li class="step step-1"><div><h3>Register the building</h3><p>The administrator adds the building, its floors and a receipt format: which fields, in which currency.</p></div></li>
+          <li class="step step-2"><div><h3>Approve residents</h3><p>Residents find the building and ask to join their apartment. Each request is approved by the administrator.</p></div></li>
+          <li class="step step-3"><div><h3>Issue the receipt</h3><p>One receipt goes to the whole building or to chosen apartments. Residents are notified straight away.</p></div></li>
+          <li class="step step-4"><div><h3>Mark it paid</h3><p>Neighbours pay the administrator outside Baytak. The administrator stamps each apartment Paid, and everyone can see it.</p></div></li>
+        </ol>
+      </div>
+      <div class="stage" aria-hidden="true">
+        <div class="stage-board">
+          <div class="floors">
+<div class="floor"><span class="floor-label"><span class="fl-long">Floor </span>4</span><span class="plate" data-k="0">4A<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate" data-k="1">4B<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate" data-k="2">4C<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate" data-k="3">4D<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span></div>
+<div class="floor"><span class="floor-label"><span class="fl-long">Floor </span>3</span><span class="plate" data-k="4">3A<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate plate-pending" data-k="5">3B<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate" data-k="6">3C<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate" data-k="7">3D<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span></div>
+<div class="floor"><span class="floor-label"><span class="fl-long">Floor </span>2</span><span class="plate" data-k="8">2A<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate" data-k="9">2B<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate plate-late" data-k="10">2C<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate" data-k="11">2D<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span></div>
+<div class="floor"><span class="floor-label"><span class="fl-long">Floor </span>1</span><span class="plate" data-k="12">1A<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate" data-k="13">1B<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate" data-k="14">1C<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate plate-late" data-k="15">1D<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span></div>
+          </div>
+          <div class="legend">
+            <span class="stamp stamp-paid"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#checks"/></svg>Paid</span>
+            <span class="stamp stamp-unpaid"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#circle"/></svg>Unpaid</span>
+            <span>Sample building</span>
+          </div>
+        </div>
+        <div class="float float-join">
+          <strong>Apartment 3B wants to join</strong>
+          <p>Floor 3</p>
+          <div class="float-actions"><span class="no">Reject</span><span class="yes"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#checks"/></svg>Approve</span></div>
+        </div>
+        <div class="float float-issue">
+          <strong>Receipt issued</strong>
+          <div class="amount">65.00 USD</div>
+          <p>Sent to every apartment. Residents are notified.</p>
+        </div>
+        <div class="float float-paid">
+          <strong>Two apartments left to collect</strong>
+          <p>Tap an unpaid plate to stamp it paid. Undo is one tap away.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="story-track" aria-hidden="true">
+    <div class="story-marker" data-step="1"></div>
+    <div class="story-marker" data-step="2"></div>
+    <div class="story-marker" data-step="3"></div>
+    <div class="story-marker" data-step="4"></div>
+  </div>
+</section>
+
+<section class="section" id="features">
+  <div class="wrap">
+    <div class="feat-head">
+      <h2 data-reveal>Made for how buildings really work.</h2>
+      <p class="sub" data-reveal data-i="1">Two currencies, a phone number, and records nobody can quietly change.</p>
+    </div>
+    <div class="bento">
+      <figure class="cell cell-photo" data-reveal>
+        <img src="/assets/img/beirut-clock-1400.jpg" srcset="/assets/img/beirut-clock-800.jpg 800w, /assets/img/beirut-clock-1400.jpg 1400w"
+             sizes="(min-width: 961px) 58vw, 100vw" width="1400" height="1141" alt="A clock tower at the end of a street in downtown Beirut, framed by sandstone buildings and a green tree." loading="lazy">
+        <figcaption>
+          <h3>Built for Lebanese buildings</h3>
+          <p>Receipts in USD and LBP, a phone number to sign in, and a notification when a new receipt arrives.</p>
+        </figcaption>
+      </figure>
+      <article class="cell cell-money" data-reveal data-i="1">
+        <div class="currencies" aria-hidden="true"><span>USD</span><span>LBP</span></div>
+        <div>
+          <h3>Two currencies, kept apart</h3>
+          <p>Every amount shows its own currency. Baytak never adds them together.</p>
+        </div>
+      </article>
+      <article class="cell cell-phone" data-reveal data-i="2">
+        <div aria-hidden="true">
+          <div class="field"><small>+961</small><span>70 123 456</span></div>
+          <div class="code"><span>4</span><span>8</span><span>2</span><span>9</span><span>1</span><span>7</span></div>
+        </div>
+        <div>
+          <h3>Sign in with your phone</h3>
+          <p>A phone number and a 6-digit code. No password to forget.</p>
+        </div>
+      </article>
+      <article class="cell cell-final" data-reveal>
+        <svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#lock-simple"/></svg>
+        <div>
+          <h3>Receipts are final</h3>
+          <p>Once issued, a receipt is never edited or deleted.</p>
+        </div>
+      </article>
+      <article class="cell cell-push" data-reveal data-i="1">
+        <div>
+          <h3>Residents know right away</h3>
+          <p>A notification arrives the moment the administrator issues a receipt.</p>
+        </div>
+        <div class="push" aria-hidden="true">
+          <img src="/assets/img/baytak-logo.png" width="44" height="44" alt="">
+          <div>
+            <strong>Baytak <span>now</span></strong>
+            <p>New receipt for your building: 65.00 USD. Tap to see the lines.</p>
+          </div>
+        </div>
+      </article>
+    </div>
+    <p class="bento-note">Amounts, codes and notifications shown are samples.</p>
+  </div>
+</section>
+
+<section class="section roles" id="who">
+  <div class="wrap">
+    <div class="roles-head">
+      <h2 data-reveal>One app, two roles.</h2>
+      <p class="sub" data-reveal data-i="1">Residents get a calm, short app. Administrators get the tools to run the building, in their own place.</p>
+    </div>
+    <div class="tabs" data-reveal data-i="2">
+      <input type="radio" name="role" id="r-res" checked>
+      <input type="radio" name="role" id="r-adm">
+      <div class="tablist"><label for="r-res">Residents</label><label for="r-adm">Administrators</label></div>
+
+      <div class="pane pane-res">
+        <div class="pane-copy">
+          <h3>Know what you owe, and whether it is settled.</h3>
+          <ul class="ticks">
+            <li><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check-circle"/></svg><span>Your balance in USD and LBP, kept apart</span></li>
+            <li><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check-circle"/></svg><span>Every receipt, marked Paid or Unpaid in words</span></li>
+            <li><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check-circle"/></svg><span>A notification when a new receipt arrives</span></li>
+            <li><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check-circle"/></svg><span>Sign in with your phone number and a code</span></li>
+          </ul>
+        </div>
+        <div class="pane-visual" aria-hidden="true">
+          <div class="statement">
+            <div class="owe">You owe</div>
+            <div class="amount">40.00<small>USD</small></div>
+            <ul>
+              <li><span>October building fees</span><span class="stamp stamp-unpaid"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#circle"/></svg>Unpaid</span></li>
+              <li><span>September building fees</span><span class="stamp stamp-paid"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#checks"/></svg>Paid</span></li>
+            </ul>
+            <p class="sample">Sample statement</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane pane-adm">
+        <div class="pane-copy">
+          <h3>Run the building's fees from your phone.</h3>
+          <ul class="ticks">
+            <li><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check-circle"/></svg><span>Register your building, its floors and a receipt format</span></li>
+            <li><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check-circle"/></svg><span>Approve or reject residents who ask to join</span></li>
+            <li><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check-circle"/></svg><span>Issue receipts to everyone, or to chosen apartments, in USD, LBP or both</span></li>
+            <li><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check-circle"/></svg><span>See who has paid, apartment by apartment</span></li>
+            <li><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check-circle"/></svg><span>Mark an apartment paid with one tap, and undo it if you slip</span></li>
+          </ul>
+          <p class="pane-note">Administrator access is reviewed and approved by Baytak before it works.</p>
+        </div>
+        <div class="pane-visual" aria-hidden="true">
+          <div class="statement">
+            <div class="headline">5 of 8 apartments have paid</div>
+            <div class="mini-board">
+              <span class="plate plate-paid">1A<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate plate-paid">1B<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate plate-unpaid">1C</span><span class="plate plate-paid">1D<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span>
+              <span class="plate plate-paid">2A<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span><span class="plate plate-unpaid">2B</span><span class="plate plate-unpaid">2C</span><span class="plate plate-paid">2D<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#check"/></svg></span>
+            </div>
+            <p class="sample">Sample building</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="trust">
+  <div class="wrap principles-grid">
+    <div class="principles-lead">
+      <h2 data-reveal>Built to be trusted.</h2>
+      <p class="sub" data-reveal data-i="1">Fees are money between neighbours. Baytak keeps the record plain, and the same for everyone.</p>
+    </div>
+    <div class="principles-list">
+      <div class="principle" data-reveal><span class="tile"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#coins"/></svg></span><div><h3>Every amount shows its currency</h3><p>USD and LBP are never added together, and status is always a word, never only a colour.</p></div></div>
+      <div class="principle" data-reveal><span class="tile"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#lock-simple"/></svg></span><div><h3>Receipts are final</h3><p>Once issued, a receipt cannot be edited or deleted. Totals are calculated on the server.</p></div></div>
+      <div class="principle" data-reveal><span class="tile"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#wifi-high"/></svg></span><div><h3>Made for everyday phones</h3><p>Built for mid-range phones and patchy connections, with safe retries when a request fails.</p></div></div>
+      <div class="principle" data-reveal><span class="tile"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#text-aa"/></svg></span><div><h3>Plain words</h3><p>No finance jargon. Text that a resident of any age can act on without help.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section gpt" id="chatgpt">
+  <div class="wrap gpt-grid">
+    <div class="gpt-copy">
+      <h2 data-reveal>Ask in ChatGPT.</h2>
+      <p class="sub" data-reveal data-i="1">Connect your Baytak account, sign in with your phone number, and ask about your building in plain words.</p>
+      <a class="text-link" href="/chatgpt/" data-reveal data-i="2">How Baytak works in ChatGPT<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#arrow-right"/></svg></a>
+    </div>
+    <div class="quotes">
+      <blockquote data-reveal>&ldquo;Do I owe anything for my building this month?&rdquo;<span class="who">For residents</span></blockquote>
+      <blockquote data-reveal data-i="1">&ldquo;Who hasn&rsquo;t paid this month&rsquo;s building receipt yet?&rdquo;<span class="who">For administrators</span></blockquote>
+      <blockquote data-reveal data-i="2">&ldquo;Show my last receipts and which ones are paid.&rdquo;<span class="who">For residents</span></blockquote>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="faq">
+  <div class="wrap faq-grid">
+    <div class="faq-head">
+      <h2 data-reveal>Questions people ask.</h2>
+      <p data-reveal data-i="1">Something else? <a href="/support/">Support</a> is one click away.</p>
+    </div>
+    <div class="faq" data-reveal data-i="1">
+<details>
+  <summary>Does Baytak take payments?<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#caret-down"/></svg></summary>
+  <div class="answer"><p>No. Baytak records receipts and who has paid. Residents pay their administrator outside the app, and the administrator marks the apartment paid.</p></div>
+</details>
+<details>
+  <summary>Can a receipt be changed after it is issued?<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#caret-down"/></svg></summary>
+  <div class="answer"><p>No. Receipts cannot be edited or deleted once issued. If one is wrong, ask your administrator how they want to correct it.</p></div>
+</details>
+<details>
+  <summary>Which currencies does Baytak use?<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#caret-down"/></svg></summary>
+  <div class="answer"><p>USD and LBP. Each amount shows its own currency, and the two are never added together.</p></div>
+</details>
+<details>
+  <summary>How do I sign in?<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#caret-down"/></svg></summary>
+  <div class="answer"><p>Enter your phone number and the 6-digit code that Baytak sends you by SMS. There is no password.</p></div>
+</details>
+<details>
+  <summary>Who can see my phone number?<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#caret-down"/></svg></summary>
+  <div class="answer"><p>Your building administrator sees your name, phone number, apartment, emergency contact and payment status. The <a href="/privacy/">privacy policy</a> lists everything we collect and who receives it.</p></div>
+</details>
+<details>
+  <summary>Is Baytak available in Arabic?<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#caret-down"/></svg></summary>
+  <div class="answer"><p>Not yet. The app is in English today. Arabic with right-to-left layout is planned.</p></div>
+</details>
+<details>
+  <summary>How do I delete my account?<svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#caret-down"/></svg></summary>
+  <div class="answer"><p>In the app, open Account and choose Delete account. <a href="/delete-account/">Read what gets deleted</a>.</p></div>
+</details>
+    </div>
+  </div>
+</section>
+
+<section class="closing">
+  <div class="wrap closing-grid">
+    <div class="closing-copy">
+      <h2 data-reveal>Make your building&rsquo;s fees clear.</h2>
+      <p class="sub" data-reveal data-i="1">Baytak is Arabic for &ldquo;your home&rdquo;.</p>
+      <div class="closing-cta" data-reveal data-i="2"><a class="btn btn-light" href="mailto:zavenlepedjian@outlook.com?subject=Baytak%20support"><svg class="i" aria-hidden="true" focusable="false"><use href="/assets/icons.svg#envelope-simple"/></svg>Email support</a></div>
+    </div>
+    <figure class="closing-photo" data-reveal data-i="1">
+      <img src="/assets/img/beirut-arcade-1100.jpg" srcset="/assets/img/beirut-arcade-700.jpg 700w, /assets/img/beirut-arcade-1100.jpg 1100w"
+           sizes="(min-width: 961px) 30vw, 100vw" width="1100" height="1229" alt="Sandstone arcades with hanging lanterns on a pedestrian street in downtown Beirut, with two people walking." loading="lazy">
+    </figure>
+  </div>
+  <div class="wordmark" aria-hidden="true" lang="ar">&#1576;&#1610;&#1578;&#1603;</div>
+</section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="/"><img src="/assets/img/baytak-logo.png" width="40" height="40" alt="">Baytak</a>
+        <p>Building fees, made clear. A service for residential buildings in Lebanon.</p>
+      </div>
+      <nav class="foot-col" aria-label="Product">
+        <h2>Product</h2>
+        <a href="/#how">How it works</a>
+        <a href="/#who">Who it is for</a>
+        <a href="/chatgpt/">Baytak in ChatGPT</a>
+      </nav>
+      <nav class="foot-col" aria-label="Legal">
+        <h2>Legal</h2>
+        <a href="/privacy/">Privacy policy</a>
+        <a href="/terms/">Terms of use</a>
+        <a href="/delete-account/">Delete your account</a>
+      </nav>
+      <nav class="foot-col" aria-label="Help">
+        <h2>Help</h2>
+        <a href="/support/">Support</a>
+        <a href="mailto:zavenlepedjian@outlook.com?subject=Baytak%20support">zavenlepedjian@outlook.com</a>
+      </nav>
+    </div>
+    <p class="foot-base">&copy; 2026 Zaven Lepedjian. Baytak is operated by Zaven Lepedjian.</p>
+  </div>
+</footer>
+</body>
+</html>
