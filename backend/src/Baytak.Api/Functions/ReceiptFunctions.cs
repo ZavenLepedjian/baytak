@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Baytak.Api.Functions;
 
@@ -40,6 +41,8 @@ public sealed class AddReceiptRequest
     public ReceiptBodyDto? Receipt { get; set; }
     public string? AppartmentIds { get; set; }
     public string? Version { get; set; }
+    /// <summary>Photos uploaded with receipt/photo, to attach to this receipt (at most five, in order).</summary>
+    public List<string>? PhotoIds { get; set; }
 }
 
 public sealed class SaveStatusRequest
@@ -60,13 +63,18 @@ public sealed class ReceiptFunctions : ApiFunction
     private readonly BaytakDbContext _db;
     private readonly IPushSender _push;
     private readonly TimeProvider _time;
+    private readonly IReceiptPhotoStore _photos;
+    private readonly PhotoOptions _photoOptions;
 
-    public ReceiptFunctions(IAccessGuard guard, BaytakDbContext db, IPushSender push, TimeProvider time, ILogger<ReceiptFunctions> logger)
+    public ReceiptFunctions(IAccessGuard guard, BaytakDbContext db, IPushSender push, TimeProvider time,
+        IReceiptPhotoStore photos, IOptions<PhotoOptions> photoOptions, ILogger<ReceiptFunctions> logger)
         : base(guard, logger)
     {
         _db = db;
         _push = push;
         _time = time;
+        _photos = photos;
+        _photoOptions = photoOptions.Value;
     }
 
     // ------------------------------------------------------------- receipt format (admin)
@@ -173,6 +181,24 @@ public sealed class ReceiptFunctions : ApiFunction
                 return Reply.BadRequest("One or more selected apartments are not part of your building");
             if (apartments.Count == 0) return Reply.BadRequest("There are no approved apartments to issue this receipt to");
 
+            // Photos: each must be an upload of this building that no receipt has claimed yet.
+            var photoIds = new List<Guid>();
+            foreach (var raw in body.PhotoIds ?? [])
+            {
+                if (!Guid.TryParse(raw, out var photoId) || photoIds.Contains(photoId)) return Reply.BadRequest("A photo is not valid. Please add it again.");
+                photoIds.Add(photoId);
+            }
+            if (photoIds.Count > _photoOptions.MaxPerReceipt) return Reply.BadRequest($"A receipt can have at most {_photoOptions.MaxPerReceipt} photos");
+            if (photoIds.Count > 0)
+            {
+                if (await _db.ReceiptPhotos.AnyAsync(p => photoIds.Contains(p.Id), ct)) return Reply.BadRequest("A photo is already attached to another receipt. Please add it again.");
+                foreach (var photoId in photoIds)
+                    if (!await _photos.ExistsAsync(ReceiptPhotoNames.BlobName(building.Id, photoId), ct))
+                        return Reply.BadRequest("A photo expired before the receipt was added. Please add it again.");
+                // Claim them first: a photo that is tagged attached is never cleaned up, whatever happens next.
+                foreach (var photoId in photoIds) await _photos.MarkAttachedAsync(ReceiptPhotoNames.BlobName(building.Id, photoId), ct);
+            }
+
             var receipt = new Receipt
             {
                 BuildingId = building.Id,
@@ -190,6 +216,13 @@ public sealed class ReceiptFunctions : ApiFunction
                     CustomFields = fields.Select(f => new { FieldName = f.Name, Type = f.IsAmount ? "Amount" : "Text", f.Value }),
                 }),
                 Assignments = apartments.Select(a => new ReceiptAssignment { ApartmentId = a.Id, Status = PaymentStatuses.Pending }).ToList(),
+                Photos = photoIds.Select((photoId, position) => new ReceiptPhoto
+                {
+                    Id = photoId,
+                    Position = position,
+                    BlobName = ReceiptPhotoNames.BlobName(building.Id, photoId),
+                    CreatedAt = _time.GetUtcNow().UtcDateTime,
+                }).ToList(),
             };
             _db.Receipts.Add(receipt);
             await _db.SaveChangesAsync(ct);
@@ -306,6 +339,14 @@ public sealed class ReceiptFunctions : ApiFunction
             .Select(x => new { x.Id, x.ReceiptId, x.Status, x.Receipt!.Total, x.Receipt.Currency, x.Receipt.BodyJson })
             .ToListAsync(ct);
 
+        var receiptIds = rows.Select(r => r.ReceiptId).Distinct().ToList();
+        var photos = (await _db.ReceiptPhotos.AsNoTracking()
+                .Where(p => receiptIds.Contains(p.ReceiptId))
+                .OrderBy(p => p.Position)
+                .Select(p => new { p.ReceiptId, p.Id })
+                .ToListAsync(ct))
+            .ToLookup(p => p.ReceiptId, p => p.Id.ToString());
+
         var apartment = ApartmentDto(apt);
         return rows.Select(r => (object)new
         {
@@ -316,6 +357,7 @@ public sealed class ReceiptFunctions : ApiFunction
             status = r.Status,
             totalPayment = r.Total,
             currency = r.Currency,
+            photoIds = photos[r.ReceiptId].ToArray(),
         }).ToList();
     }
 
@@ -333,8 +375,8 @@ public sealed class ReceiptFunctions : ApiFunction
         return text.Length == 0 ? "v2.0" : text[..Math.Min(16, text.Length)];
     }
 
-    private sealed record StoredField(string FieldName, string Type);
-    private sealed record Field(string Name, bool IsAmount, string Value);
+    internal sealed record StoredField(string FieldName, string Type);
+    internal sealed record Field(string Name, bool IsAmount, string Value);
 
     private static List<int>? ParseIds(string? raw)
     {
@@ -348,7 +390,7 @@ public sealed class ReceiptFunctions : ApiFunction
     }
 
     /// <summary>Trims, bounds and de-duplicates the field list shared by formats and receipts.</summary>
-    private static (List<Field>? Fields, string? Error) NormalizeFields(List<ReceiptFieldDto>? input, bool requireAmount)
+    internal static (List<Field>? Fields, string? Error) NormalizeFields(List<ReceiptFieldDto>? input, bool requireAmount)
     {
         if (input is null || input.Count == 0) return (null, "Add at least one field");
         if (input.Count > MaxFields) return (null, $"A receipt can have at most {MaxFields} fields");
@@ -388,7 +430,7 @@ public sealed class ReceiptFunctions : ApiFunction
         return amount >= 0 && amount <= EntryValidator.MaxAmount && decimal.Round(amount, 2) == amount;
     }
 
-    private static List<Field> ReadFields(string bodyJson)
+    internal static List<Field> ReadFields(string bodyJson)
     {
         try
         {

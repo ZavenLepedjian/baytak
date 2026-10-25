@@ -128,6 +128,38 @@ public class Receipt
     /// <summary>When the administrator last pushed a payment reminder for this receipt (limited to once a day).</summary>
     public DateTime? LastReminderAt { get; set; }
     public List<ReceiptAssignment> Assignments { get; set; } = new();
+    /// <summary>Photos of the bill or invoice the receipt is based on, attached when the receipt is issued (at most five).</summary>
+    public List<ReceiptPhoto> Photos { get; set; } = new();
+}
+
+/// <summary>
+/// A photo attached to a receipt. The image itself lives in private Blob storage under <see cref="BlobName"/>;
+/// only the building's administrator and the residents the receipt was issued to can read it.
+/// </summary>
+public class ReceiptPhoto
+{
+    /// <summary>Also the blob's file name, and what the app asks for.</summary>
+    public Guid Id { get; set; }
+    public int ReceiptId { get; set; }
+    public Receipt? Receipt { get; set; }
+    /// <summary>Order the administrator attached them in, from 0.</summary>
+    public int Position { get; set; }
+    /// <summary>Path inside the photos container: "{buildingId}/{id}.jpg".</summary>
+    public string BlobName { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
+/// <summary>A named set of receipt lines an administrator saved to start new receipts from (e.g. "Monthly fees").</summary>
+public class ReceiptTemplate
+{
+    public int Id { get; set; }
+    public int BuildingId { get; set; }
+    public Building? Building { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Currency { get; set; } = "USD";
+    /// <summary>JSON array of { fieldName, type }. Amounts are not saved: they are typed per receipt.</summary>
+    public string FieldsJson { get; set; } = "[]";
+    public DateTime UpdatedAt { get; set; }
 }
 
 /// <summary>A receipt issued to one apartment, with that apartment's payment status.</summary>

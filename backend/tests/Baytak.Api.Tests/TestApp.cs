@@ -68,7 +68,38 @@ public sealed class FakePush : IPushSender
     }
 }
 
-public sealed record Response(int Status, string Body)
+/// <summary>An in-memory stand-in for the Blob container. A blob is "pending" until a receipt attaches it.</summary>
+public sealed class FakePhotoStore : IReceiptPhotoStore
+{
+    public Dictionary<string, (byte[] Data, string Status)> Blobs { get; } = new();
+
+    public Task SaveAsync(string name, Stream content, CancellationToken ct)
+    {
+        using var copy = new MemoryStream();
+        content.CopyTo(copy);
+        Blobs[name] = (copy.ToArray(), "pending");
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> ExistsAsync(string name, CancellationToken ct) => Task.FromResult(Blobs.ContainsKey(name));
+
+    public Task MarkAttachedAsync(string name, CancellationToken ct)
+    {
+        Blobs[name] = (Blobs[name].Data, "attached");
+        return Task.CompletedTask;
+    }
+
+    public Task<Stream?> OpenReadAsync(string name, CancellationToken ct) =>
+        Task.FromResult<Stream?>(Blobs.TryGetValue(name, out var blob) ? new MemoryStream(blob.Data) : null);
+
+    public Task DeleteAsync(string name, CancellationToken ct)
+    {
+        Blobs.Remove(name);
+        return Task.CompletedTask;
+    }
+}
+
+public sealed record Response(int Status, string Body, byte[]? Bytes = null)
 {
     public bool Ok => Status is >= 200 and < 300;
     public JsonElement Json => JsonDocument.Parse(Body).RootElement;
@@ -89,6 +120,7 @@ public sealed class TestApp : IDisposable
     public ServiceProvider Services { get; }
     public FakeSms Sms { get; } = new();
     public FakePush Push { get; } = new();
+    public FakePhotoStore Photos { get; } = new();
     public FakeTimeProvider Time { get; } = new(new DateTimeOffset(2025, 3, 1, 9, 0, 0, TimeSpan.Zero));
 
     public TestApp(Action<OtpOptions>? configureOtp = null, Action<SmsOptions>? configureSms = null, FakeVerifier? verifier = null)
@@ -99,6 +131,8 @@ public sealed class TestApp : IDisposable
         services.Configure<OtpOptions>(o => configureOtp?.Invoke(o));
         services.Configure<SmsOptions>(o => configureSms?.Invoke(o));
         services.Configure<PhoneOptions>(_ => { });
+        services.Configure<PhotoOptions>(_ => { });
+        services.AddSingleton<IReceiptPhotoStore>(Photos);
         services.AddSingleton<TimeProvider>(Time);
         var postgres = Environment.GetEnvironmentVariable("BAYTAK_TEST_POSTGRES");
         if (string.IsNullOrWhiteSpace(postgres))
@@ -130,25 +164,38 @@ public sealed class TestApp : IDisposable
     /// <summary>Runs one request against a function class, in its own DI scope (like one invocation).</summary>
     public async Task<Response> Call<T>(
         Func<T, HttpRequest, CancellationToken, Task<IActionResult>> handler,
-        object? body = null, string? token = null, string? query = null, string? rawBody = null) where T : class
+        object? body = null, string? token = null, string? query = null, string? rawBody = null, byte[]? bytes = null) where T : class
     {
         using var scope = Services.CreateScope();
         var function = ActivatorUtilities.CreateInstance<T>(scope.ServiceProvider);
 
         var context = new DefaultHttpContext();
         var request = context.Request;
-        request.Method = body is null && rawBody is null ? "GET" : "POST";
+        request.Method = body is null && rawBody is null && bytes is null ? "GET" : "POST";
         if (query is not null) request.QueryString = new QueryString(query);
         if (token is not null) request.Headers.Authorization = "Bearer " + token;
-        if (body is not null || rawBody is not null)
+        if (bytes is not null)
         {
-            var bytes = Encoding.UTF8.GetBytes(rawBody ?? JsonSerializer.Serialize(body));
             request.Body = new MemoryStream(bytes);
-            request.ContentType = "application/json";
+            request.ContentType = "image/jpeg";
             request.ContentLength = bytes.Length;
         }
+        else if (body is not null || rawBody is not null)
+        {
+            var json = Encoding.UTF8.GetBytes(rawBody ?? JsonSerializer.Serialize(body));
+            request.Body = new MemoryStream(json);
+            request.ContentType = "application/json";
+            request.ContentLength = json.Length;
+        }
 
-        var result = Assert.IsType<ContentResult>(await handler(function, request, CancellationToken.None));
+        var action = await handler(function, request, CancellationToken.None);
+        if (action is FileStreamResult file)
+        {
+            using var copy = new MemoryStream();
+            await file.FileStream.CopyToAsync(copy);
+            return new Response(200, "", copy.ToArray());
+        }
+        var result = Assert.IsType<ContentResult>(action);
         return new Response(result.StatusCode ?? 200, result.Content ?? "");
     }
 

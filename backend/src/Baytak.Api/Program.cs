@@ -38,6 +38,7 @@ builder.Services.Configure<OtpOptions>(config.GetSection("Otp"));
 builder.Services.Configure<SmsOptions>(config.GetSection("Sms"));
 builder.Services.Configure<PushOptions>(config.GetSection("Push"));
 builder.Services.Configure<PhoneOptions>(config.GetSection("Phone"));
+builder.Services.Configure<PhotoOptions>(config.GetSection("Photos"));
 
 // ---- database: Azure SQL in production, SQLite for local development
 var provider = config["Database:Provider"] ?? "SqlServer";
@@ -70,6 +71,17 @@ builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddHttpClient(TwilioSmsSender.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(15));
 builder.Services.AddHttpClient(ExpoPushSender.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddScoped<IPushSender, ExpoPushSender>();
+
+// Receipt photos live in a private Blob container. The Functions storage account is used unless Photos:ConnectionString says otherwise.
+var photoConnection = config["Photos:ConnectionString"];
+if (string.IsNullOrWhiteSpace(photoConnection)) photoConnection = config["AzureWebJobsStorage"];
+var hasStorageAccount = !string.IsNullOrWhiteSpace(photoConnection)
+    && (photoConnection.Contains("AccountName=", StringComparison.OrdinalIgnoreCase) || photoConnection.StartsWith("UseDevelopmentStorage", StringComparison.OrdinalIgnoreCase));
+if (hasStorageAccount)
+    builder.Services.AddSingleton<IReceiptPhotoStore>(sp => new BlobReceiptPhotoStore(
+        sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<PhotoOptions>>(), photoConnection!, sp.GetRequiredService<ILogger<BlobReceiptPhotoStore>>()));
+else
+    builder.Services.AddSingleton<IReceiptPhotoStore, UnavailableReceiptPhotoStore>();
 
 var smsProvider = config["Sms:Provider"] ?? "Twilio";
 if (smsProvider.Equals("Log", StringComparison.OrdinalIgnoreCase))

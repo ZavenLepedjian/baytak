@@ -17,7 +17,7 @@ namespace Baytak.Wallet.Api.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.31")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -288,6 +288,69 @@ namespace Baytak.Wallet.Api.Migrations
                     b.ToTable("ReceiptFormats");
                 });
 
+            modelBuilder.Entity("Baytak.Api.Data.ReceiptPhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BlobName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReceiptId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceiptId", "Position");
+
+                    b.ToTable("ReceiptPhotos");
+                });
+
+            modelBuilder.Entity("Baytak.Api.Data.ReceiptTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BuildingId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.Property<string>("FieldsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuildingId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("ReceiptTemplates");
+                });
+
             modelBuilder.Entity("Baytak.Api.Data.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -478,6 +541,28 @@ namespace Baytak.Wallet.Api.Migrations
                     b.Navigation("Building");
                 });
 
+            modelBuilder.Entity("Baytak.Api.Data.ReceiptPhoto", b =>
+                {
+                    b.HasOne("Baytak.Api.Data.Receipt", "Receipt")
+                        .WithMany("Photos")
+                        .HasForeignKey("ReceiptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Receipt");
+                });
+
+            modelBuilder.Entity("Baytak.Api.Data.ReceiptTemplate", b =>
+                {
+                    b.HasOne("Baytak.Api.Data.Building", "Building")
+                        .WithMany()
+                        .HasForeignKey("BuildingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Building");
+                });
+
             modelBuilder.Entity("Baytak.Api.Data.WalletEntry", b =>
                 {
                     b.HasOne("Baytak.Api.Data.User", "User")
@@ -497,6 +582,8 @@ namespace Baytak.Wallet.Api.Migrations
             modelBuilder.Entity("Baytak.Api.Data.Receipt", b =>
                 {
                     b.Navigation("Assignments");
+
+                    b.Navigation("Photos");
                 });
 #pragma warning restore 612, 618
         }

@@ -18,6 +18,8 @@ public class BaytakDbContext : DbContext
     public DbSet<ReceiptFormat> ReceiptFormats => Set<ReceiptFormat>();
     public DbSet<Receipt> Receipts => Set<Receipt>();
     public DbSet<ReceiptAssignment> ReceiptAssignments => Set<ReceiptAssignment>();
+    public DbSet<ReceiptPhoto> ReceiptPhotos => Set<ReceiptPhoto>();
+    public DbSet<ReceiptTemplate> ReceiptTemplates => Set<ReceiptTemplate>();
     public DbSet<WalletEntry> WalletEntries => Set<WalletEntry>();
 
     protected override void OnModelCreating(ModelBuilder b)
@@ -91,6 +93,21 @@ public class BaytakDbContext : DbContext
             e.HasOne(x => x.Receipt).WithMany(x => x.Assignments).HasForeignKey(x => x.ReceiptId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.Apartment).WithMany().HasForeignKey(x => x.ApartmentId).OnDelete(DeleteBehavior.Cascade);
             e.Property(x => x.Status).HasMaxLength(16).IsRequired();
+        });
+
+        b.Entity<ReceiptPhoto>(e =>
+        {
+            e.HasIndex(x => new { x.ReceiptId, x.Position });
+            e.HasOne(x => x.Receipt).WithMany(x => x.Photos).HasForeignKey(x => x.ReceiptId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(x => x.BlobName).HasMaxLength(200).IsRequired();
+        });
+
+        b.Entity<ReceiptTemplate>(e =>
+        {
+            e.HasIndex(x => new { x.BuildingId, x.Name }).IsUnique();
+            e.HasOne(x => x.Building).WithMany().HasForeignKey(x => x.BuildingId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(x => x.Name).HasMaxLength(60).IsRequired();
+            e.Property(x => x.Currency).HasMaxLength(8).IsRequired();
         });
 
         b.Entity<WalletEntry>(e =>
