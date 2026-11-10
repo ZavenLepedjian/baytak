@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from './ui';
 import { colors, spacing } from '../theme';
+import { t } from '../i18n';
 
 type State = { error: Error | null };
 
@@ -22,12 +23,12 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
     return (
       <View style={styles.root}>
         <Text variant="title" align="center">
-          Something went wrong
+          {t('Something went wrong')}
         </Text>
         <Text variant="body" color={colors.textMuted} align="center" style={{ marginVertical: spacing.md }}>
-          The app hit an unexpected problem. You can try again.
+          {t('The app hit an unexpected problem. You can try again.')}
         </Text>
-        <Button title="Try again" onPress={() => this.setState({ error: null })} style={{ alignSelf: 'stretch' }} />
+        <Button title={t('Try again')} onPress={() => this.setState({ error: null })} style={{ alignSelf: 'stretch' }} />
       </View>
     );
   }

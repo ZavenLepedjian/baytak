@@ -1,0 +1,5 @@
+{
+  "NSLocationWhenInUseUsageDescription": "يستخدم بيتك موقعك لمساعدتك على إيجاد أقرب المباني المسجّلة في التطبيق إليك.",
+  "NSCameraUsageDescription": "يستخدم بيتك الكاميرا لتتمكّن من تصوير الفاتورة وإرفاقها بإيصال تصدره.",
+  "NSPhotoLibraryUsageDescription": "يتيح لك بيتك إرفاق صور الفاتورة بإيصال تصدره لمبناك."
+}

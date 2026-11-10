@@ -1,4 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import { apiRequest } from '../api/client';
 import { getPhoneNumber, getRoles, isAdmin, isTokenExpired } from './jwt';
@@ -32,6 +34,12 @@ type AuthContextValue = AuthState & {
   signOut: (options?: { remote?: boolean }) => Promise<void>;
   /** Returns the fresh status, or null when it could not be fetched. */
   refreshUserStatus: () => Promise<string | null>;
+  /**
+   * Makes the login token match the account's role. The role is written into the token, so after a building is handed over
+   * the new administrator and the former one each fetch a new token here. Cheap when nothing changed; `force` skips the
+   * once-every-30-seconds limit.
+   */
+  refreshSession: (force?: boolean) => Promise<void>;
   setFullName: (name: string) => void;
 };
 
@@ -150,6 +158,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const lastSync = useRef(0);
+  const refreshSession = useCallback(
+    async (force = false) => {
+      const token = tokenRef.current;
+      if (!token) return;
+      const now = Date.now();
+      if (!force && now - lastSync.current < 30_000) return;
+      lastSync.current = now;
+
+      const status = await apiRequest<{ userStatus?: string; role?: string }>('user/status', { token, timeoutMs: 10000 });
+      if (tokenRef.current !== token) return; // signed out (or in as someone else) while waiting
+      if (!status.ok) {
+        if (status.unauthorized) await signOut({ remote: false });
+        return;
+      }
+      if (!status.data) return;
+      if ((status.data.role === 'Admin') === isAdmin(getRoles(token))) return;
+
+      const renewed = await apiRequest<{ auth?: string; userStatus?: string }>('auth/refresh', { method: 'POST', token, body: {}, timeoutMs: 10000 });
+      if (tokenRef.current !== token || !renewed.ok || !renewed.data?.auth) return;
+      await signIn(renewed.data.auth, renewed.data.userStatus ?? status.data.userStatus ?? null);
+    },
+    [signIn, signOut],
+  );
+
+  // Pick up a change of role (a building handed over) when the app is opened, brought back, or a notification arrives.
+  useEffect(() => {
+    if (state.status !== 'signedIn') return;
+    void refreshSession(true);
+    const appState = AppState.addEventListener('change', (next) => {
+      if (next === 'active') void refreshSession();
+    });
+    const received = Notifications.addNotificationReceivedListener(() => void refreshSession(true));
+    const opened = Notifications.addNotificationResponseReceivedListener(() => void refreshSession(true));
+    return () => {
+      appState.remove();
+      received.remove();
+      opened.remove();
+    };
+  }, [state.status, refreshSession]);
+
   const refreshUserStatus = useCallback(async (): Promise<string | null> => {
     const token = tokenRef.current;
     if (!token) return null;
@@ -180,9 +229,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signIn,
       signOut,
       refreshUserStatus,
+      refreshSession,
       setFullName,
     };
-  }, [state, signIn, signOut, refreshUserStatus, setFullName]);
+  }, [state, signIn, signOut, refreshUserStatus, refreshSession, setFullName]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

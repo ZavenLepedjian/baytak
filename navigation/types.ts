@@ -25,6 +25,7 @@ export type RootStackParamList = {
   Buildings: undefined;
   Receipts: undefined;
   Wallet: undefined;
+  Summary: undefined;
   // Admin
   Apartments: undefined;
   PendingApartments: undefined;
@@ -32,6 +33,7 @@ export type RootStackParamList = {
   CreateReceipt: { apartments?: ApartmentChoice[] } | undefined;
   SelectApartments: { selected: ApartmentChoice[] };
   SetupReceipt: undefined;
+  TransferAdmin: undefined;
   SetupBuilding: { latitude?: number; longitude?: number } | undefined;
   BuildingLocation: { latitude?: number; longitude?: number } | undefined;
 };

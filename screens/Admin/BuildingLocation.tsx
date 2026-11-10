@@ -7,6 +7,7 @@ import { Button, Text } from '../../components/ui';
 import { useLocation } from '../../location/LocationProvider';
 import type { ScreenProps } from '../../navigation/types';
 import { colors, radius, shadow, spacing } from '../../theme';
+import { t } from '../../i18n';
 
 type Point = { latitude: number; longitude: number };
 
@@ -33,11 +34,11 @@ function CurrentLocationPicker({ navigation }: ScreenProps<'BuildingLocation'>) 
 
   return (
     <View style={[styles.flex, { justifyContent: 'center', padding: spacing.lg, paddingBottom: insets.bottom + spacing.lg }]}>
-      <Text variant="title" style={{ marginBottom: spacing.sm }}>Use your current location</Text>
+      <Text variant="title" style={{ marginBottom: spacing.sm }}>{t('Use your current location')}</Text>
       <Text variant="body" color={colors.textMuted} style={{ marginBottom: spacing.xl }}>
-        The map is not available in this version. Stand at the building and Baytak will use your current location for it.
+        {t('The map is not available in this version. Stand at the building and Baytak will use your current location for it.')}
       </Text>
-      <Button title="Use my current location" icon="locate" onPress={confirm} />
+      <Button title={t('Use my current location')} icon="locate" onPress={confirm} />
     </View>
   );
 }
@@ -74,14 +75,14 @@ function MapPicker({ navigation, route }: ScreenProps<'BuildingLocation'>) {
   return (
     <View style={styles.flex}>
       <MapView ref={mapRef} style={styles.flex} initialRegion={region} showsUserLocation onPress={(e) => setPoint(e.nativeEvent.coordinate)}>
-        {point ? <Marker draggable coordinate={point} title="Building" onDragEnd={(e) => setPoint(e.nativeEvent.coordinate)} /> : null}
+        {point ? <Marker draggable coordinate={point} title={t('Building')} onDragEnd={(e) => setPoint(e.nativeEvent.coordinate)} /> : null}
       </MapView>
 
       <View style={[styles.panel, shadow.md, { marginBottom: insets.bottom + spacing.lg }]}>
         <Text variant="body" color={colors.textMuted} style={{ marginBottom: spacing.md }}>
-          {point ? 'Drag the pin or tap the map to adjust the location.' : 'Tap the map to place the building.'}
+          {point ? t('Drag the pin or tap the map to adjust the location.') : t('Tap the map to place the building.')}
         </Text>
-        <Button title="Use this location" icon="checkmark" disabled={!point} onPress={confirm} />
+        <Button title={t('Use this location')} icon="checkmark" disabled={!point} onPress={confirm} />
       </View>
     </View>
   );

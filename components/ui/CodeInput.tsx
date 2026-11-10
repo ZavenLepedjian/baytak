@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Keyboard, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { colors, radius, spacing } from '../../theme';
 import { Text } from './Text';
+import { t } from '../../i18n';
 
 type Props = {
   value: string;
@@ -56,7 +57,7 @@ export function CodeInput({ value, onChange, length = 6, error = false, editable
         caretHidden
         contextMenuHidden
         selectTextOnFocus={false}
-        accessibilityLabel={`Verification code, ${length} digits`}
+        accessibilityLabel={t('Verification code, {n} digits', { n: length })}
         style={styles.input}
       />
     </View>
@@ -64,7 +65,8 @@ export function CodeInput({ value, onChange, length = 6, error = false, editable
 }
 
 const styles = StyleSheet.create({
-  root: { height: 60 },
+  // The six digits are read left to right in every language.
+  root: { height: 60, direction: 'ltr' },
   cells: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'space-between' },
   cell: {
     flex: 1,

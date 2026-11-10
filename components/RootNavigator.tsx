@@ -18,11 +18,13 @@ import Dashboard from '../screens/Dashboard';
 import Account from '../screens/Account';
 import Receipts from '../screens/AppartmentAllReceipts';
 import Wallet from '../screens/Wallet';
+import Summary from '../screens/Summary';
 import Profile from '../screens/User/Profile';
 import JoinBuilding from '../screens/User/AppartmentRequest';
 import Buildings from '../screens/User/Buildings';
 import AdminHome from '../screens/Admin/AdminHome';
 import Manage from '../screens/Admin/Manage';
+import TransferAdmin from '../screens/Admin/TransferAdmin';
 import Collection from '../screens/Admin/Collection';
 import Apartments from '../screens/Admin/Appartments';
 import PendingApartments from '../screens/Admin/AddAppartment';
@@ -32,6 +34,7 @@ import SelectApartments from '../screens/Admin/SimpleAppartmentList';
 import SetupReceipt from '../screens/Admin/SetupReceipt';
 import SetupBuilding from '../screens/Admin/AddBuilding';
 import BuildingLocation from '../screens/Admin/BuildingLocation';
+import { t } from '../i18n';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -82,14 +85,14 @@ function Tabs() {
       })}
     >
       {/* Administrators land on the building's dashboard; residents on what they owe. */}
-      <Tab.Screen name="Home" component={isAdmin ? AdminHome : Dashboard} options={{ title: 'Home' }} />
+      <Tab.Screen name="Home" component={isAdmin ? AdminHome : Dashboard} options={{ title: t('Home') }} />
       {isAdmin ? (
         <Tab.Screen
           name="Collect"
           component={Collection}
           options={{
-            title: 'Collection',
-            tabBarLabel: 'Collect',
+            title: t('Collection'),
+            tabBarLabel: t('Collect'),
             headerShown: true,
             headerShadowVisible: false,
             headerStyle: { backgroundColor: colors.primary },
@@ -98,8 +101,8 @@ function Tabs() {
           }}
         />
       ) : null}
-      {isAdmin ? <Tab.Screen name="Manage" component={Manage} options={{ title: 'Manage' }} /> : null}
-      <Tab.Screen name="Account" component={Account} options={{ title: 'Account' }} />
+      {isAdmin ? <Tab.Screen name="Manage" component={Manage} options={{ title: t('Manage') }} /> : null}
+      <Tab.Screen name="Account" component={Account} options={{ title: t('Account') }} />
     </Tab.Navigator>
   );
 }
@@ -137,11 +140,12 @@ export default function RootNavigator() {
         ) : (
           <>
             <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
-            <Stack.Screen name="Profile" component={Profile} options={{ title: 'Edit profile' }} />
-            <Stack.Screen name="JoinBuilding" component={JoinBuilding} options={{ title: 'My apartment' }} />
-            <Stack.Screen name="Buildings" component={Buildings} options={{ title: 'Choose a building' }} />
-            <Stack.Screen name="Receipts" component={Receipts} options={{ title: 'My receipts' }} />
-            {FEATURES.wallet ? <Stack.Screen name="Wallet" component={Wallet} options={{ title: 'Wallet' }} /> : null}
+            <Stack.Screen name="Profile" component={Profile} options={{ title: t('Edit profile') }} />
+            <Stack.Screen name="JoinBuilding" component={JoinBuilding} options={{ title: t('My apartment') }} />
+            <Stack.Screen name="Buildings" component={Buildings} options={{ title: t('Choose a building') }} />
+            <Stack.Screen name="Receipts" component={Receipts} options={{ title: t('My receipts') }} />
+            <Stack.Screen name="Summary" component={Summary} options={{ title: t('Monthly summary') }} />
+            {FEATURES.wallet ? <Stack.Screen name="Wallet" component={Wallet} options={{ title: t('Wallet') }} /> : null}
 
             {isAdmin ? (
               <>
@@ -149,21 +153,22 @@ export default function RootNavigator() {
                   name="Apartments"
                   component={Apartments}
                   options={({ navigation }) => ({
-                    title: 'Apartments',
+                    title: t('Apartments'),
                     headerRight: () => (
-                      <Pressable accessibilityRole="button" accessibilityLabel="Join requests" hitSlop={hitSlop} onPress={() => navigation.navigate('PendingApartments')}>
+                      <Pressable accessibilityRole="button" accessibilityLabel={t('Join requests')} hitSlop={hitSlop} onPress={() => navigation.navigate('PendingApartments')}>
                         <Ionicons name="person-add-outline" size={24} color={colors.primary} />
                       </Pressable>
                     ),
                   })}
                 />
-                <Stack.Screen name="PendingApartments" component={PendingApartments} options={{ title: 'Join requests' }} />
+                <Stack.Screen name="PendingApartments" component={PendingApartments} options={{ title: t('Join requests') }} />
                 <Stack.Screen name="ApartmentReceipts" component={ApartmentReceipts} options={({ route }) => ({ title: route.params.appartmentNumber })} />
-                <Stack.Screen name="CreateReceipt" component={CreateReceipt} options={{ title: 'New receipt' }} />
-                <Stack.Screen name="SelectApartments" component={SelectApartments} options={{ title: 'Select apartments' }} />
-                <Stack.Screen name="SetupReceipt" component={SetupReceipt} options={{ title: 'Receipt format' }} />
-                <Stack.Screen name="SetupBuilding" component={SetupBuilding} options={{ title: 'Building details' }} />
-                <Stack.Screen name="BuildingLocation" component={BuildingLocation} options={{ title: 'Building location' }} />
+                <Stack.Screen name="CreateReceipt" component={CreateReceipt} options={{ title: t('New receipt') }} />
+                <Stack.Screen name="SelectApartments" component={SelectApartments} options={{ title: t('Select apartments') }} />
+                <Stack.Screen name="SetupReceipt" component={SetupReceipt} options={{ title: t('Receipt format') }} />
+                <Stack.Screen name="TransferAdmin" component={TransferAdmin} options={{ title: t('Transfer administrator') }} />
+                <Stack.Screen name="SetupBuilding" component={SetupBuilding} options={{ title: t('Building details') }} />
+                <Stack.Screen name="BuildingLocation" component={BuildingLocation} options={{ title: t('Building location') }} />
               </>
             ) : null}
           </>

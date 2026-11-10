@@ -3,12 +3,13 @@ import { AccessibilityInfo, Animated, Easing, StyleSheet, View } from 'react-nat
 import { Ionicons } from '@expo/vector-icons';
 import { colors, family, radius, spacing } from '../../theme';
 import { Text } from './Text';
+import { t, isArabic } from '../../i18n';
 
 export type PaymentState = 'paid' | 'unpaid';
 
 /** Receipt statuses come from the API as Pending / Paid; people read them as Unpaid / Paid. */
 export const toPaymentState = (status: string | null | undefined): PaymentState => (status === 'Paid' ? 'paid' : 'unpaid');
-export const paymentLabel = (state: PaymentState) => (state === 'paid' ? 'Paid' : 'Unpaid');
+export const paymentLabel = (state: PaymentState) => (state === 'paid' ? t('Paid') : t('Unpaid'));
 
 const ink: Record<PaymentState, { color: string; wash: string; icon: keyof typeof Ionicons.glyphMap }> = {
   paid: { color: colors.success, wash: colors.successSoft, icon: 'checkmark-done' },
@@ -74,7 +75,7 @@ export function Stamp({ state, size = 'md', settle = false }: Props) {
         <Text
           variant="label"
           color={tone.color}
-          style={{ fontFamily: family.bold, fontSize: small ? 12 : 13, letterSpacing: 1, textTransform: 'uppercase' }}
+          style={{ fontFamily: family.bold, fontSize: small ? 12 : 13, letterSpacing: isArabic() ? 0 : 1, textTransform: 'uppercase' }}
         >
           {paymentLabel(state)}
         </Text>

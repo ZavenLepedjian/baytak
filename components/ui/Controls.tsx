@@ -9,6 +9,7 @@ import { Button } from './Button';
 import { Sheet } from './Sheet';
 import { formatDate } from '../../functions/format';
 import { chevronForward } from './direction';
+import { t } from '../../i18n';
 
 type Option<T extends string> = { value: T; label: string };
 
@@ -100,7 +101,7 @@ export function DateField({
           {label}
         </Text>
       ) : null}
-      <Pressable accessibilityRole="button" accessibilityLabel={`${label ?? 'Date'}: ${formatDate(value)}`} onPress={open} style={styles.dateBox}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${label ?? t('Date')}: ${formatDate(value)}`} onPress={open} style={styles.dateBox}>
         <Ionicons name="calendar-outline" size={20} color={colors.textFaint} style={{ marginEnd: spacing.sm }} />
         <Text variant="body" style={{ flex: 1 }}>
           {formatDate(value)}
@@ -109,7 +110,7 @@ export function DateField({
       </Pressable>
 
       {Platform.OS === 'ios' ? (
-        <Sheet visible={iosOpen} onClose={() => setIosOpen(false)} title={label ?? 'Select date'}>
+        <Sheet visible={iosOpen} onClose={() => setIosOpen(false)} title={label ?? t('Select date')}>
           <DateTimePicker
             value={draft}
             mode="date"
@@ -120,7 +121,7 @@ export function DateField({
             onChange={(_, date) => date && setDraft(date)}
           />
           <Button
-            title="Done"
+            title={t('Done')}
             onPress={() => {
               onChange(draft);
               setIosOpen(false);

@@ -16,10 +16,15 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.baytak.bms",
-      "buildNumber": "20",
+      "buildNumber": "22",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "The Baytak App uses your location to help you find the closest buildings registered in the app near you."
+        "NSLocationWhenInUseUsageDescription": "The Baytak App uses your location to help you find the closest buildings registered in the app near you.",
+        "CFBundleLocalizations": [
+          "en",
+          "ar"
+        ],
+        "CFBundleDevelopmentRegion": "en"
       }
     },
     "android": {
@@ -28,7 +33,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.baytak.bms",
-      "versionCode": 20,
+      "versionCode": 16,
       "allowBackup": false
     },
     "web": {
@@ -68,6 +73,9 @@
           "microphonePermission": false
         }
       ]
-    ]
+    ],
+    "locales": {
+      "ar": "./locales/ar.json"
+    }
   }
 }

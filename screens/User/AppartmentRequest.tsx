@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Keyboard, View } from 'react-native';
 import { useApi } from '../../api/useApi';
-import { Badge, Button, Card, ErrorState, InfoBanner, ListSkeleton, Screen, Text, TextField, showMessage, statusTone } from '../../components/ui';
+import { Badge, Button, Card, ErrorState, InfoBanner, ListSkeleton, Screen, Text, TextField, showMessage, statusLabel, statusTone } from '../../components/ui';
 import { useFetch } from '../../hooks/useFetch';
 import type { ScreenProps } from '../../navigation/types';
 import { colors, spacing } from '../../theme';
+import { t } from '../../i18n';
 
 type ApartmentForm = {
   appartmentNumber: string;
@@ -58,9 +59,9 @@ export default function JoinBuilding({ navigation, route }: ScreenProps<'JoinBui
   const submit = async () => {
     Keyboard.dismiss();
     const next: typeof errors = {};
-    if (!form.floor) next.floor = 'Please set the floor your apartment is on';
-    if (!form.buildingId) next.building = 'Please select the building you want to join';
-    if (!form.appartmentDescription.trim()) next.description = 'Please enter an apartment description';
+    if (!form.floor) next.floor = t('Please set the floor your apartment is on');
+    if (!form.buildingId) next.building = t('Please select the building you want to join');
+    if (!form.appartmentDescription.trim()) next.description = t('Please enter an apartment description');
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -72,7 +73,7 @@ export default function JoinBuilding({ navigation, route }: ScreenProps<'JoinBui
     });
     setSaving(false);
     if (res.ok) {
-      showMessage({ message: typeof res.data === 'string' && res.data ? res.data : 'Request sent', type: 'success' });
+      showMessage({ message: typeof res.data === 'string' && res.data ? res.data : t('Request sent'), type: 'success' });
       syncedFrom.current = null;
       void refetch();
     }
@@ -94,51 +95,51 @@ export default function JoinBuilding({ navigation, route }: ScreenProps<'JoinBui
   }
 
   const statusMessage: Record<string, string> = {
-    Pending: 'Your request is waiting for the building administration to approve it.',
-    Approved: 'You are part of this building.',
-    Rejected: 'Your request was rejected. You can update the details and try again.',
+    Pending: t('Your request is waiting for the building administration to approve it.'),
+    Approved: t('You are part of this building.'),
+    Rejected: t('Your request was rejected. You can update the details and try again.'),
   };
 
   return (
     <Screen refreshing={refreshing} onRefresh={refetch}>
       {form.status ? (
         <Card style={{ marginBottom: spacing.lg, gap: spacing.sm }}>
-          <Badge label={form.status} tone={statusTone(form.status)} />
+          <Badge label={statusLabel(form.status)} tone={statusTone(form.status)} />
           <Text variant="body" color={colors.textMuted}>
             {statusMessage[form.status] ?? ''}
           </Text>
         </Card>
       ) : (
         <InfoBanner>
-          Registering your apartment adds you to the selected building. The building administration will verify your request before you can join.
+          {t('Registering your apartment adds you to the selected building. The building administration will verify your request before you can join.')}
         </InfoBanner>
       )}
 
       <Card>
         <View style={{ gap: spacing.lg }}>
           <TextField
-            label="Building *"
+            label={t('Building *')}
             icon="business-outline"
             value={form.buildingName}
-            placeholder="Choose a building"
+            placeholder={t('Choose a building')}
             editable={false}
             error={errors.building}
           />
-          {editable ? <Button title={form.buildingId ? 'Change building' : 'Choose building'} variant="secondary" small icon="search-outline" onPress={() => navigation.navigate('Buildings')} /> : null}
+          {editable ? <Button title={form.buildingId ? t('Change building') : t('Choose building')} variant="secondary" small icon="search-outline" onPress={() => navigation.navigate('Buildings')} /> : null}
 
           <TextField
-            label="Apartment number"
+            label={t('Apartment number')}
             icon="key-outline"
-            placeholder="Apartment number"
-            helper="Generated automatically if left empty"
+            placeholder={t('Apartment number')}
+            helper={t('Generated automatically if left empty')}
             value={form.appartmentNumber}
             editable={editable}
             onChangeText={(v) => update({ appartmentNumber: v })}
           />
           <TextField
-            label="Floor *"
+            label={t('Floor *')}
             icon="layers-outline"
-            placeholder="Floor"
+            placeholder={t('Floor')}
             keyboardType="number-pad"
             value={form.floor ? String(form.floor) : ''}
             editable={editable}
@@ -149,8 +150,8 @@ export default function JoinBuilding({ navigation, route }: ScreenProps<'JoinBui
             error={errors.floor}
           />
           <TextField
-            label="Description *"
-            placeholder="e.g. Corner apartment, facing the sea"
+            label={t('Description *')}
+            placeholder={t('e.g. Corner apartment, facing the sea')}
             multiline
             value={form.appartmentDescription}
             editable={editable}
@@ -164,7 +165,7 @@ export default function JoinBuilding({ navigation, route }: ScreenProps<'JoinBui
       </Card>
 
       {editable ? (
-        <Button title={form.status === 'Rejected' ? 'Request again' : 'Send request'} loading={saving} onPress={submit} style={{ marginTop: spacing.xl }} />
+        <Button title={form.status === 'Rejected' ? t('Request again') : t('Send request')} loading={saving} onPress={submit} style={{ marginTop: spacing.xl }} />
       ) : null}
     </Screen>
   );

@@ -7,6 +7,7 @@ import { ordinalFloor } from '../../functions/format';
 import { useFetch } from '../../hooks/useFetch';
 import type { ScreenProps } from '../../navigation/types';
 import { colors, HIT, hitSlop, radius, spacing } from '../../theme';
+import { t, ltr } from '../../i18n';
 
 export type Apartment = {
   id: number | string;
@@ -34,12 +35,12 @@ export default function Apartments({ navigation }: ScreenProps<'Apartments'>) {
   }, [data, query]);
 
   const call = (phone: string) => {
-    Linking.openURL(`tel:${phone}`).catch(() => showMessage({ message: 'Unable to open the phone app', type: 'danger' }));
+    Linking.openURL(`tel:${phone}`).catch(() => showMessage({ message: t('Unable to open the phone app'), type: 'danger' }));
   };
 
   const copy = async (a: Apartment) => {
     await Clipboard.setStringAsync(`primary:${a.phoneNumber};emergency:${a.emergencyContactPersonPhoneNumber ?? ''}`);
-    showMessage({ message: 'Phone numbers copied', type: 'success' });
+    showMessage({ message: t('Phone numbers copied'), type: 'success' });
   };
 
   if (loading) {
@@ -60,7 +61,7 @@ export default function Apartments({ navigation }: ScreenProps<'Apartments'>) {
   return (
     <Screen refreshing={refreshing} onRefresh={refetch}>
       {(data?.length ?? 0) > 0 ? (
-        <TextField icon="search-outline" placeholder="Search by number, name or phone" value={query} onChangeText={setQuery} autoCorrect={false} />
+        <TextField icon="search-outline" placeholder={t('Search by number, name or phone')} value={query} onChangeText={setQuery} autoCorrect={false} />
       ) : null}
 
       <View style={{ gap: spacing.md, marginTop: spacing.lg }}>
@@ -69,25 +70,24 @@ export default function Apartments({ navigation }: ScreenProps<'Apartments'>) {
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Apartment ${a.appartmentNumber}, ${a.fullName || 'unnamed resident'}. Opens payments`}
-                accessibilityActions={[{ name: 'copy', label: 'Copy phone numbers' }]}
+                accessibilityLabel={t('Apartment {number}, {name}. Opens payments', { number: a.appartmentNumber, name: a.fullName || t('unnamed resident') })}
+                accessibilityActions={[{ name: 'copy', label: t('Copy phone numbers') }]}
                 onAccessibilityAction={(e) => e.nativeEvent.actionName === 'copy' && void copy(a)}
-                onPress={() => navigation.navigate('ApartmentReceipts', { id: a.id, appartmentNumber: `Apartment ${a.appartmentNumber}` })}
+                onPress={() => navigation.navigate('ApartmentReceipts', { id: a.id, appartmentNumber: t('Apartment {number}', { number: a.appartmentNumber }) })}
                 onLongPress={() => void copy(a)}
                 style={({ pressed }) => [styles.rowMain, pressed && { backgroundColor: colors.primaryTint }]}
               >
                 <DoorPlate number={a.appartmentNumber} size="sm" />
                 <View style={{ flex: 1 }}>
                   <Text variant="bodyStrong" numberOfLines={1}>
-                    {a.fullName || 'Unnamed resident'}
+                    {a.fullName || t('Unnamed resident')}
                   </Text>
                   <Text variant="caption" color={colors.textMuted}>
                     {ordinalFloor(a.floor)}
                   </Text>
                   {a.emergencyContactPersonPhoneNumber ? (
                     <Text variant="caption" color={colors.textMuted} numberOfLines={1}>
-                      Emergency: {a.emergencyContactPersonFullName ? `${a.emergencyContactPersonFullName} · ` : ''}
-                      {a.emergencyContactPersonPhoneNumber}
+                      {t('Emergency: {contact}', { contact: `${a.emergencyContactPersonFullName ? `${a.emergencyContactPersonFullName} · ` : ''}${ltr(a.emergencyContactPersonPhoneNumber)}` })}
                     </Text>
                   ) : null}
                 </View>
@@ -95,7 +95,7 @@ export default function Apartments({ navigation }: ScreenProps<'Apartments'>) {
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Call ${a.fullName || a.phoneNumber}`}
+                accessibilityLabel={t('Call {name}', { name: a.fullName || ltr(a.phoneNumber) })}
                 hitSlop={hitSlop}
                 onPress={() => call(a.phoneNumber)}
                 style={styles.callTile}
@@ -110,9 +110,9 @@ export default function Apartments({ navigation }: ScreenProps<'Apartments'>) {
       {list.length === 0 ? (
         <EmptyState
           icon="business-outline"
-          title={query ? 'No matches' : 'No apartments yet'}
-          message={query ? 'Try a different search.' : 'Approved apartments will appear here. Pull down to refresh.'}
-          actionTitle={query ? undefined : 'Review join requests'}
+          title={query ? t('No matches') : t('No apartments yet')}
+          message={query ? t('Try a different search.') : t('Approved apartments will appear here. Pull down to refresh.')}
+          actionTitle={query ? undefined : t('Review join requests')}
           onAction={query ? undefined : () => navigation.navigate('PendingApartments')}
         />
       ) : null}

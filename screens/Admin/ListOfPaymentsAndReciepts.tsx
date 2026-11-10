@@ -8,6 +8,7 @@ import { useFetch } from '../../hooks/useFetch';
 import type { ScreenProps } from '../../navigation/types';
 import { colors, spacing } from '../../theme';
 import { ReceiptItem, selectReceipts } from '../Dashboard';
+import { t } from '../../i18n';
 
 export default function ApartmentReceipts({ route }: ScreenProps<'ApartmentReceipts'>) {
   const { id } = route.params;
@@ -29,7 +30,7 @@ export default function ApartmentReceipts({ route }: ScreenProps<'ApartmentRecei
     setBusyKey(null);
 
     if (res.ok) {
-      showMessage({ message: `Receipt marked as ${status === 'Paid' ? 'paid' : 'unpaid'}`, type: 'success' });
+      showMessage({ message: status === 'Paid' ? t('Receipt marked as paid') : t('Receipt marked as unpaid'), type: 'success' });
       void refetch();
     } else {
       setData(previous);
@@ -56,7 +57,7 @@ export default function ApartmentReceipts({ route }: ScreenProps<'ApartmentRecei
   return (
     <Screen refreshing={refreshing} onRefresh={refetch}>
       {items.length === 0 ? (
-        <EmptyState icon="receipt-outline" title="No receipts yet" message="Receipts issued to this apartment will appear here." />
+        <EmptyState icon="receipt-outline" title={t('No receipts yet')} message={t('Receipts issued to this apartment will appear here.')} />
       ) : (
         <View style={{ gap: spacing.md }}>
           {items.map((item, i) => {
@@ -67,7 +68,7 @@ export default function ApartmentReceipts({ route }: ScreenProps<'ApartmentRecei
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View>
                     <Text variant="caption" color={colors.textMuted}>
-                      Issued {formatDate(item.parsed.date)}
+                      {t('Issued {date}', { date: formatDate(item.parsed.date) })}
                     </Text>
                     <Text variant="title" color={paid ? colors.success : colors.text} style={{ marginTop: 2 }}>
                       {formatMoney(item.totalPayment, item.currency)}
@@ -79,7 +80,7 @@ export default function ApartmentReceipts({ route }: ScreenProps<'ApartmentRecei
                   small
                   variant={paid ? 'secondary' : 'primary'}
                   icon={paid ? 'arrow-undo-outline' : 'checkmark-circle-outline'}
-                  title={paid ? 'Mark as unpaid' : 'Mark as paid'}
+                  title={paid ? t('Mark as unpaid') : t('Mark as paid')}
                   loading={busyKey === key}
                   disabled={!!busyKey && busyKey !== key}
                   onPress={() => toggleStatus(item, key)}

@@ -7,6 +7,7 @@ import { useFetch } from '../../hooks/useFetch';
 import type { ApartmentChoice, ScreenProps } from '../../navigation/types';
 import { colors, radius, spacing } from '../../theme';
 import { Apartment, selectApartments } from './Appartments';
+import { t } from '../../i18n';
 
 /** Pick the apartments a custom receipt applies to. The selection returns to the receipt screen on "Done". */
 export default function SelectApartments({ navigation, route }: ScreenProps<'SelectApartments'>) {
@@ -16,7 +17,7 @@ export default function SelectApartments({ navigation, route }: ScreenProps<'Sel
   );
 
   useEffect(() => {
-    navigation.setOptions({ title: selected.size ? `Select apartments (${selected.size})` : 'Select apartments' });
+    navigation.setOptions({ title: selected.size ? t('Select apartments ({n})', { n: selected.size }) : t('Select apartments') });
   }, [navigation, selected.size]);
 
   const toggle = (a: Apartment) =>
@@ -50,11 +51,11 @@ export default function SelectApartments({ navigation, route }: ScreenProps<'Sel
   return (
     <Screen refreshing={refreshing} onRefresh={refetch}>
       <Text variant="body" color={colors.textMuted} style={{ marginBottom: spacing.lg }}>
-        Choose the apartments this receipt is for. Leave everything unselected to issue it to the whole building.
+        {t('Choose the apartments this receipt is for. Leave everything unselected to issue it to the whole building.')}
       </Text>
 
       {list.length === 0 ? (
-        <EmptyState icon="business-outline" title="No apartments yet" message="Approved apartments will be listed here." />
+        <EmptyState icon="business-outline" title={t('No apartments yet')} message={t('Approved apartments will be listed here.')} />
       ) : (
         <View style={{ gap: spacing.sm }}>
           {list.map((a) => {
@@ -64,7 +65,7 @@ export default function SelectApartments({ navigation, route }: ScreenProps<'Sel
                 key={String(a.id)}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: on }}
-                accessibilityLabel={`Apartment ${a.appartmentNumber}, ${a.fullName}`}
+                accessibilityLabel={t('Apartment {number}, {name}', { number: a.appartmentNumber, name: a.fullName })}
                 onPress={() => toggle(a)}
                 style={{
                   flexDirection: 'row',
@@ -79,7 +80,7 @@ export default function SelectApartments({ navigation, route }: ScreenProps<'Sel
               >
                 <DoorPlate number={a.appartmentNumber} size="sm" />
                 <View style={{ flex: 1 }}>
-                  <Text variant="bodyStrong">{a.fullName || 'Unnamed resident'}</Text>
+                  <Text variant="bodyStrong">{a.fullName || t('Unnamed resident')}</Text>
                   <Text variant="caption" color={colors.textMuted}>
                     {ordinalFloor(a.floor)}
                   </Text>
@@ -91,7 +92,7 @@ export default function SelectApartments({ navigation, route }: ScreenProps<'Sel
         </View>
       )}
 
-      <Button title="Done" onPress={done} style={{ marginTop: spacing.xl }} />
+      <Button title={t('Done')} onPress={done} style={{ marginTop: spacing.xl }} />
     </Screen>
   );
 }

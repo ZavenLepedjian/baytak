@@ -7,7 +7,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "eject": "expo eject",
-    "test:unit": "node --experimental-strip-types --no-warnings --test functions/*.test.mjs"
+    "test:unit": "node --experimental-strip-types --no-warnings --test functions/*.test.mjs i18n/*.test.mjs",
+    "i18n:check": "node --experimental-strip-types --no-warnings i18n/check.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/ibm-plex-sans-arabic": "^0.4.2",
@@ -28,7 +29,9 @@
     "expo-linear-gradient": "~57.0.2",
     "expo-location": "~57.0.21",
     "expo-notifications": "~57.0.23",
+    "expo-print": "~57.0.2",
     "expo-secure-store": "~57.0.4",
+    "expo-sharing": "~57.0.24",
     "expo-splash-screen": "~57.0.10",
     "expo-status-bar": "~57.0.1",
     "expo-updates": "~57.0.26",

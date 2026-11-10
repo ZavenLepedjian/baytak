@@ -5,6 +5,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
 import { useApi } from '../../api/useApi';
+import { billedToText, ShareReceiptSheet } from '../../components/ShareReceipt';
 import {
   Button,
   ConfirmDialog,
@@ -20,7 +21,9 @@ import {
   showMessage,
   toPaymentState,
 } from '../../components/ui';
-import { currencyLabel, formatAmount, formatDate, fromYmd, ordinalFloor } from '../../functions/format';
+import { currencyLabel, formatAmount, formatDate, fromYmd, ordinalFloor, parseReceipt } from '../../functions/format';
+import type { NoticeModel } from '../../functions/receiptNotice';
+import { t, tn, ltr } from '../../i18n';
 import { useFetch } from '../../hooks/useFetch';
 import type { RootStackParamList, TabParamList } from '../../navigation/types';
 import { colors, family, HIT, radius, spacing } from '../../theme';
@@ -56,7 +59,7 @@ function selectSummary(raw: unknown): Summary {
   return { hasBuilding: !!r.hasBuilding, receipts: Array.isArray(r.receipts) ? r.receipts : [], selected: r.selected ?? null };
 }
 
-const money = (value: number, currency: string) => `${formatAmount(value, currency)} ${currencyLabel(currency)}`;
+const money = (value: number, currency: string) => ltr(`${formatAmount(value, currency)} ${currencyLabel(currency)}`);
 
 export default function Collection() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -76,6 +79,8 @@ export default function Collection() {
   const [plate, setPlate] = useState<Plate | null>(null);
   const [switcher, setSwitcher] = useState(false);
   const [confirmRemind, setConfirmRemind] = useState(false);
+  const [shareModel, setShareModel] = useState<NoticeModel | null>(null);
+  const [preparingShare, setPreparingShare] = useState(false);
   const [reminding, setReminding] = useState(false);
   // Stamping several apartments in a row must not wait on each request, so pending state is per apartment.
   const [pendingIds, setPendingIds] = useState<ReadonlySet<number>>(new Set());
@@ -130,9 +135,9 @@ export default function Collection() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     void setStatus(target, 'Paid');
     showMessage({
-      message: `Apartment ${target.apartmentNumber} marked as paid`,
+      message: t('Apartment {number} marked as paid', { number: target.apartmentNumber }),
       type: 'success',
-      action: { label: 'Undo', onPress: () => void setStatus({ ...target, status: 'Paid' }, 'Pending') },
+      action: { label: t('Undo'), onPress: () => void setStatus({ ...target, status: 'Paid' }, 'Pending') },
     });
   };
 
@@ -144,7 +149,7 @@ export default function Collection() {
     setConfirmRemind(false);
     if (res.ok) {
       const sent = res.data?.sent ?? counts.unpaidCount;
-      showMessage({ message: `Reminder sent to ${sent} ${sent === 1 ? 'resident' : 'residents'}`, type: 'success' });
+      showMessage({ message: tn('Reminder sent to {n} resident|Reminder sent to {n} residents', sent), type: 'success' });
       void refetch();
     }
   };
@@ -168,9 +173,9 @@ export default function Collection() {
       <Screen tab scroll={false}>
         <EmptyState
           icon="business-outline"
-          title="Set up your building first"
-          message="Add your building so residents can join it. Collection starts once you have issued a receipt."
-          actionTitle="Set up building"
+          title={t('Set up your building first')}
+          message={t('Add your building so residents can join it. Collection starts once you have issued a receipt.')}
+          actionTitle={t('Set up building')}
           onAction={() => navigation.navigate('SetupBuilding')}
         />
       </Screen>
@@ -181,52 +186,80 @@ export default function Collection() {
       <Screen tab scroll={false}>
         <EmptyState
           icon="receipt-outline"
-          title="No receipts yet"
-          message="Issue your first receipt and every apartment appears here as a door plate you can stamp as paid."
-          actionTitle="New receipt"
+          title={t('No receipts yet')}
+          message={t('Issue your first receipt and every apartment appears here as a door plate you can stamp as paid.')}
+          actionTitle={t('New receipt')}
           onAction={() => navigation.navigate('CreateReceipt')}
         />
       </Screen>
     );
   }
 
+  /** Lines and building name for the receipt on screen, then the share menu. The summary does not carry the lines, so they are read from one of its apartments. */
+  const openShare = async () => {
+    if (preparingShare || selected.apartments.length === 0) return;
+    setPreparingShare(true);
+    const [receipts, building] = await Promise.all([
+      api.get<unknown>(`receipts/appartment/${selected.apartments[0].apartmentId}`),
+      api.get<{ buildingName?: string }>('building/get'),
+    ]);
+    setPreparingShare(false);
+    const rows = receipts.ok && Array.isArray(receipts.data) ? (receipts.data as { receiptId?: number; receipt?: string }[]) : [];
+    const row = rows.find((r) => Number(r.receiptId) === selected.id);
+    if (!row) {
+      showMessage({ message: t('Could not load this receipt'), type: 'danger' });
+      return;
+    }
+    const parsed = parseReceipt(row.receipt);
+    const unit = currencyLabel(selected.currency);
+    setShareModel({
+      buildingName: (building.ok && building.data?.buildingName) || t('Your building'),
+      date: formatDate(fromYmd(selected.date)),
+      lines: parsed.fields
+        .filter((f) => (f.type === 'amount' ? Number(f.value) !== 0 : f.value.trim() !== ''))
+        .map((f) => (f.type === 'amount' ? { name: f.name, amount: `${formatAmount(f.value, selected.currency)} ${unit}` } : { name: f.name, note: f.value })),
+      total: `${formatAmount(selected.total, selected.currency)} ${unit}`,
+      billedTo: billedToText([], selected.count),
+    });
+  };
+
   const allPaid = selected.count > 0 && counts.unpaidCount === 0;
   const collected = counts.paidCount * selected.total;
   const headline =
     selected.count === 0
-      ? 'No apartments were billed'
+      ? t('No apartments were billed')
       : allPaid
-        ? 'Everyone has paid'
-        : `${counts.paidCount} of ${selected.count} apartments have paid`;
+        ? t('Everyone has paid')
+        : tn('{paid} of {n} apartment has paid|{paid} of {n} apartments have paid', selected.count, { paid: counts.paidCount });
 
   return (
     <Screen tab refreshing={refreshing} onRefresh={refetch}>
       <FocusedStatusBar style="light" />
-      <View accessible accessibilityRole="header" accessibilityLabel={`${headline}. Collected ${money(collected, selected.currency)} of ${money(selected.expected, selected.currency)}`}>
+      <View accessible accessibilityRole="header" accessibilityLabel={t('{headline}. Collected {collected} of {expected}', { headline, collected: money(collected, selected.currency), expected: money(selected.expected, selected.currency) })}>
         <Text variant="title" importantForAccessibility="no">
           {headline}
         </Text>
         <Text numeral variant="body" color={colors.textMuted} style={{ marginTop: 2 }} importantForAccessibility="no">
-          Collected {money(collected, selected.currency)} of {money(selected.expected, selected.currency)}
+          {t('Collected {collected} of {expected}', { collected: money(collected, selected.currency), expected: money(selected.expected, selected.currency) })}
         </Text>
       </View>
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Receipt of ${formatDate(fromYmd(selected.date))}, ${money(selected.total, selected.currency)}. Change receipt`}
+        accessibilityLabel={t('Receipt of {date}, {amount}. Change receipt', { date: formatDate(fromYmd(selected.date)), amount: money(selected.total, selected.currency) })}
         onPress={() => setSwitcher(true)}
         style={styles.switcher}
       >
         <View style={{ flex: 1 }}>
           <Text variant="caption" color={colors.textMuted}>
-            Receipt
+            {t('Receipt')}
           </Text>
           <Text variant="bodyStrong">
             {formatDate(fromYmd(selected.date))} · <Text numeral variant="bodyStrong">{money(selected.total, selected.currency)}</Text>
           </Text>
         </View>
         <Text variant="bodyStrong" color={colors.primary}>
-          Change
+          {t('Change')}
         </Text>
         <Ionicons name="chevron-down" size={18} color={colors.primary} />
       </Pressable>
@@ -235,20 +268,20 @@ export default function Collection() {
         <Pressable
           accessibilityRole="switch"
           accessibilityState={{ checked: unpaidOnly }}
-          accessibilityLabel="Show unpaid only"
+          accessibilityLabel={t('Show unpaid only')}
           onPress={() => setUnpaidOnly((v) => !v)}
           style={[styles.chip, unpaidOnly && styles.chipOn]}
         >
           <Ionicons name={unpaidOnly ? 'checkmark' : 'funnel-outline'} size={16} color={unpaidOnly ? colors.plateText : colors.primary} />
           <Text variant="bodyStrong" color={unpaidOnly ? colors.plateText : colors.primary}>
-            Unpaid only
+            {t('Unpaid only')}
           </Text>
         </Pressable>
         <Button
           small
           icon="notifications-outline"
           variant="secondary"
-          title={counts.unpaidCount > 0 ? `Remind ${counts.unpaidCount} unpaid` : 'Remind'}
+          title={counts.unpaidCount > 0 ? t('Remind {n} unpaid', { n: counts.unpaidCount }) : t('Remind')}
           disabled={!selected.canRemind || counts.unpaidCount === 0}
           onPress={() => setConfirmRemind(true)}
           style={{ flex: 1 }}
@@ -256,13 +289,24 @@ export default function Collection() {
       </View>
       {counts.unpaidCount > 0 && !selected.canRemind ? (
         <Text variant="caption" color={colors.textMuted} style={{ marginTop: spacing.xs }}>
-          You already sent a reminder for this receipt today.
+          {t('You already sent a reminder for this receipt today.')}
         </Text>
       ) : null}
 
+      <Button
+        small
+        variant="ghost"
+        icon="share-outline"
+        title={t('Share this receipt')}
+        loading={preparingShare}
+        onPress={openShare}
+        style={{ marginTop: spacing.sm, alignSelf: 'flex-start' }}
+      />
+      <ShareReceiptSheet visible={shareModel !== null} model={shareModel} onClose={() => setShareModel(null)} />
+
       {floors.length === 0 ? (
         <View style={{ marginTop: spacing.xl }}>
-          <EmptyState icon="checkmark-done-outline" title="Nothing unpaid" message="Every apartment has paid this receipt." />
+          <EmptyState icon="checkmark-done-outline" title={t('Nothing unpaid')} message={t('Every apartment has paid this receipt.')} />
         </View>
       ) : (
         floors.map(([floor, plates]) => (
@@ -288,12 +332,12 @@ export default function Collection() {
       )}
 
       {/* One plate: who, how much, and the stamp. */}
-      <Sheet visible={!!livePlate} onClose={() => setPlate(null)} title={livePlate ? `Apartment ${livePlate.apartmentNumber}` : undefined}>
+      <Sheet visible={!!livePlate} onClose={() => setPlate(null)} title={livePlate ? t('Apartment {number}', { number: livePlate.apartmentNumber }) : undefined}>
         {livePlate ? (
           <View style={{ gap: spacing.lg }}>
             <View style={styles.detailTop}>
               <View style={{ flex: 1 }}>
-                <Text variant="bodyStrong">{livePlate.residentName || 'Unnamed resident'}</Text>
+                <Text variant="bodyStrong">{livePlate.residentName || t('Unnamed resident')}</Text>
                 <Text variant="caption" color={colors.textMuted}>
                   {ordinalFloor(livePlate.floor)}
                 </Text>
@@ -303,7 +347,7 @@ export default function Collection() {
 
             <View style={styles.detailAmount}>
               <Text variant="body" color={colors.textMuted}>
-                Receipt of {formatDate(fromYmd(selected.date))}
+                {t('Receipt of {date}', { date: formatDate(fromYmd(selected.date)) })}
               </Text>
               <Text numeral variant="heading" style={{ fontSize: 22 }}>
                 {money(selected.total, selected.currency)}
@@ -311,16 +355,16 @@ export default function Collection() {
             </View>
 
             {toPaymentState(livePlate.status) === 'paid' ? (
-              <Button title="Mark as unpaid" variant="secondary" loading={pendingIds.has(livePlate.apartmentId)} onPress={() => setStatus(livePlate, 'Pending')} />
+              <Button title={t('Mark as unpaid')} variant="secondary" loading={pendingIds.has(livePlate.apartmentId)} onPress={() => setStatus(livePlate, 'Pending')} />
             ) : (
-              <Button title="Mark as paid" icon="checkmark-done" loading={pendingIds.has(livePlate.apartmentId)} onPress={() => setStatus(livePlate, 'Paid')} />
+              <Button title={t('Mark as paid')} icon="checkmark-done" loading={pendingIds.has(livePlate.apartmentId)} onPress={() => setStatus(livePlate, 'Paid')} />
             )}
             {livePlate.phoneNumber ? (
               <Button
-                title={`Call ${livePlate.residentName || livePlate.phoneNumber}`}
+                title={t('Call {name}', { name: livePlate.residentName || ltr(livePlate.phoneNumber) })}
                 icon="call-outline"
                 variant="ghost"
-                onPress={() => Linking.openURL(`tel:${livePlate.phoneNumber}`).catch(() => showMessage({ message: 'Unable to open the phone app', type: 'danger' }))}
+                onPress={() => Linking.openURL(`tel:${livePlate.phoneNumber}`).catch(() => showMessage({ message: t('Unable to open the phone app'), type: 'danger' }))}
               />
             ) : null}
           </View>
@@ -328,7 +372,7 @@ export default function Collection() {
       </Sheet>
 
       {/* Receipt switcher */}
-      <Sheet visible={switcher} onClose={() => setSwitcher(false)} title="Choose a receipt">
+      <Sheet visible={switcher} onClose={() => setSwitcher(false)} title={t('Choose a receipt')}>
         <View style={{ gap: spacing.sm }}>
           {(data?.receipts ?? []).map((r) => {
             const on = r.id === selected.id;
@@ -337,7 +381,7 @@ export default function Collection() {
                 key={r.id}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: on }}
-                accessibilityLabel={`Receipt of ${formatDate(fromYmd(r.date))}, ${money(r.total, r.currency)}, ${r.paidCount} of ${r.count} paid`}
+                accessibilityLabel={t('Receipt of {date}, {amount}, {paid} of {count} paid', { date: formatDate(fromYmd(r.date)), amount: money(r.total, r.currency), paid: r.paidCount, count: r.count })}
                 onPress={() => {
                   setReceiptId(r.id);
                   setSwitcher(false);
@@ -347,7 +391,7 @@ export default function Collection() {
                 <View style={{ flex: 1 }}>
                   <Text variant="bodyStrong">{formatDate(fromYmd(r.date))}</Text>
                   <Text numeral variant="caption" color={colors.textMuted}>
-                    {money(r.total, r.currency)} · {r.paidCount} of {r.count} paid
+                    {t('{amount} · {paid} of {count} paid', { amount: money(r.total, r.currency), paid: r.paidCount, count: r.count })}
                   </Text>
                 </View>
                 {on ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
@@ -359,9 +403,9 @@ export default function Collection() {
 
       <ConfirmDialog
         visible={confirmRemind}
-        title="Send a reminder?"
-        message={`We will send a push notification to the ${counts.unpaidCount} ${counts.unpaidCount === 1 ? 'resident who has' : 'residents who have'} not paid the receipt of ${formatDate(fromYmd(selected.date))}. You can send one reminder per receipt per day.`}
-        confirmTitle="Send reminder"
+        title={t('Send a reminder?')}
+        message={tn('We will send a push notification to the {n} resident who has not paid the receipt of {date}. You can send one reminder per receipt per day.|We will send a push notification to the {n} residents who have not paid the receipt of {date}. You can send one reminder per receipt per day.', counts.unpaidCount, { date: formatDate(fromYmd(selected.date)) })}
+        confirmTitle={t('Send reminder')}
         loading={reminding}
         onCancel={() => setConfirmRemind(false)}
         onConfirm={sendReminder}
@@ -417,9 +461,9 @@ function PlateCell({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Apartment ${plate.apartmentNumber}, ${paid ? 'paid' : 'unpaid'}, ${money(total, currency)}`}
-      accessibilityHint={paid ? 'Opens details' : 'Marks as paid. Long press for details'}
-      accessibilityActions={[{ name: 'details', label: 'Show details' }]}
+      accessibilityLabel={t('Apartment {number}, {state}, {amount}', { number: plate.apartmentNumber, state: paid ? t('paid') : t('unpaid'), amount: money(total, currency) })}
+      accessibilityHint={paid ? t('Opens details') : t('Marks as paid. Long press for details')}
+      accessibilityActions={[{ name: 'details', label: t('Show details') }]}
       onAccessibilityAction={(e) => e.nativeEvent.actionName === 'details' && onOpen()}
       onPress={paid ? onOpen : onStamp}
       onLongPress={onOpen}
@@ -431,7 +475,7 @@ function PlateCell({
       <View style={styles.caption}>
         <Ionicons name={paid ? 'checkmark-done' : 'ellipse-outline'} size={15} color={paid ? colors.success : colors.danger} />
         <Text variant="label" color={paid ? colors.success : colors.danger} style={{ fontFamily: family.bold, fontSize: 13, lineHeight: 18 }}>
-          {paid ? 'Paid' : 'Unpaid'}
+          {paid ? t('Paid') : t('Unpaid')}
         </Text>
       </View>
     </Pressable>

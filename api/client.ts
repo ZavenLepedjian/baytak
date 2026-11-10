@@ -1,5 +1,6 @@
 import { API_BASE_URL, API_KEY, REQUEST_TIMEOUT_MS } from '../config';
 import { buildUrl } from './url';
+import { t, tServer } from '../i18n';
 
 export type ApiSuccess<T> = { ok: true; status: number; data: T };
 export type ApiFailure = {
@@ -25,8 +26,8 @@ export type RequestOptions = {
   contentType?: string;
 };
 
-const NETWORK_ERROR = 'Unable to reach the server. Check your connection and try again.';
-const TIMEOUT_ERROR = 'The request took too long. Please try again.';
+const NETWORK_ERROR = t('Unable to reach the server. Check your connection and try again.');
+const TIMEOUT_ERROR = t('The request took too long. Please try again.');
 
 /** The API replies with JSON strings or plain text; normalise both into a readable message. */
 function toMessage(raw: string, fallback: string): string {
@@ -46,7 +47,7 @@ function toMessage(raw: string, fallback: string): string {
 }
 
 function fail(status: number, error: string, extra?: Partial<ApiFailure>): ApiFailure {
-  return { ok: false, status, error, unauthorized: status === 401, aborted: false, ...extra };
+  return { ok: false, status, error: tServer(error), unauthorized: status === 401, aborted: false, ...extra };
 }
 
 export async function apiRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<ApiResult<T>> {
@@ -81,7 +82,7 @@ export async function apiRequest<T = unknown>(path: string, options: RequestOpti
     const text = await res.text();
 
     if (!res.ok) {
-      const fallback = res.status === 401 ? 'Unauthorized' : `Something went wrong (${res.status}). Please try again.`;
+      const fallback = res.status === 401 ? t('Unauthorized') : t('Something went wrong ({status}). Please try again.', { status: res.status });
       return fail(res.status, toMessage(text, fallback));
     }
 
@@ -95,7 +96,7 @@ export async function apiRequest<T = unknown>(path: string, options: RequestOpti
   } catch (e) {
     if (controller.signal.aborted) {
       if (timedOut) return fail(0, TIMEOUT_ERROR);
-      return fail(0, 'Request cancelled', { aborted: true });
+      return fail(0, t('Request cancelled'), { aborted: true });
     }
     return fail(0, NETWORK_ERROR);
   } finally {

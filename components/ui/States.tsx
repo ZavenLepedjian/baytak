@@ -4,10 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing } from '../../theme';
 import { Text } from './Text';
 import { Button } from './Button';
+import { t } from '../../i18n';
 
 export function Loading({ label }: { label?: string }) {
   return (
-    <View style={styles.center} accessibilityRole="progressbar" accessibilityLabel={label ?? 'Loading'}>
+    <View style={styles.center} accessibilityRole="progressbar" accessibilityLabel={label ?? t('Loading')}>
       <ActivityIndicator size="large" color={colors.primary} />
       {label ? (
         <Text variant="caption" color={colors.textMuted} style={{ marginTop: spacing.md }}>
@@ -52,12 +53,12 @@ export function ErrorState({ message, onRetry }: { message?: string | null; onRe
         <Ionicons name="cloud-offline-outline" size={34} color={colors.danger} />
       </View>
       <Text variant="heading" align="center" style={{ marginTop: spacing.lg }}>
-        Something went wrong
+        {t('Something went wrong')}
       </Text>
       <Text variant="body" color={colors.textMuted} align="center" style={{ marginTop: spacing.xs + 2 }}>
-        {message ?? 'Please check your connection and try again.'}
+        {message ?? t('Please check your connection and try again.')}
       </Text>
-      {onRetry ? <Button title="Try again" icon="refresh" variant="secondary" onPress={onRetry} style={{ marginTop: spacing.xl, alignSelf: 'stretch' }} /> : null}
+      {onRetry ? <Button title={t('Try again')} icon="refresh" variant="secondary" onPress={onRetry} style={{ marginTop: spacing.xl, alignSelf: 'stretch' }} /> : null}
     </View>
   );
 }
@@ -80,7 +81,7 @@ export function Skeleton({ height = 16, width = '100%', style }: { height?: numb
 
 export function ListSkeleton({ rows = 4, rowHeight = 88 }: { rows?: number; rowHeight?: number }) {
   return (
-    <View accessibilityRole="progressbar" accessibilityLabel="Loading" style={{ gap: spacing.md }}>
+    <View accessibilityRole="progressbar" accessibilityLabel={t('Loading')} style={{ gap: spacing.md }}>
       {Array.from({ length: rows }).map((_, i) => (
         <View key={i} style={[styles.skelCard, { height: rowHeight }]}>
           <Skeleton height={44} width={44} style={{ borderRadius: radius.md }} />

@@ -17,6 +17,7 @@ import { Text } from './Text';
 import { Button } from './Button';
 import { ToastHost } from './Toast';
 import { KeyboardSafe } from './KeyboardSafe';
+import { t } from '../../i18n';
 
 type SheetProps = {
   visible: boolean;
@@ -104,7 +105,7 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
     <Modal visible transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
       <KeyboardSafe ios="padding" style={styles.root}>
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: progress }]}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" accessibilityRole="button">
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('Close')} accessibilityRole="button">
             <View style={styles.backdrop} />
           </Pressable>
         </Animated.View>
@@ -115,7 +116,7 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
           ]}
         >
           <View {...pan.panHandlers} style={styles.grab}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.grabTarget}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Close')} onPress={onClose} style={styles.grabTarget}>
               <View style={styles.handle} />
             </Pressable>
           </View>
@@ -155,8 +156,8 @@ export function ConfirmDialog({
   visible,
   title,
   message,
-  confirmTitle = 'Confirm',
-  cancelTitle = 'Cancel',
+  confirmTitle = t('Confirm'),
+  cancelTitle = t('Cancel'),
   destructive,
   loading,
   onConfirm,

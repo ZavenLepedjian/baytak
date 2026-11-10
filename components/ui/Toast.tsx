@@ -3,6 +3,7 @@ import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text, View 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, HIT, MAX_FONT_SCALE, radius, shadow, spacing } from '../../theme';
+import { t, tServer } from '../../i18n';
 
 export type ToastType = 'success' | 'danger' | 'info' | 'warning';
 export type ToastAction = { label: string; onPress: () => void };
@@ -14,11 +15,13 @@ const listeners = new Set<Listener>();
 let counter = 0;
 
 /** Show a toast from anywhere (screens, API layer). An action (e.g. Undo) keeps the toast up longer. */
-export function showMessage({ message, type = 'info', action }: { message: string; type?: ToastType | 'default'; action?: ToastAction }) {
-  if (!message) return;
+export function showMessage({ message: raw, type = 'info', action }: { message: string; type?: ToastType | 'default'; action?: ToastAction }) {
+  if (!raw) return;
+  // Messages the server wrote in English (errors and confirmations) are translated here; the app's own are already.
+  const message = tServer(raw);
   const payload: ToastPayload = { id: ++counter, message, type: type === 'default' ? 'info' : type, action };
   // Screen readers get the message once, whichever host happens to be on screen.
-  AccessibilityInfo.announceForAccessibility(action ? `${message}. ${action.label} available` : message);
+  AccessibilityInfo.announceForAccessibility(action ? t('{message}. {action} available', { message, action: action.label }) : message);
   listeners.forEach((l) => l(payload));
 }
 
@@ -77,7 +80,7 @@ export function ToastHost() {
   }, [hide, progress, screenReader]);
 
   if (!toast) return null;
-  const t = tone[toast.type];
+  const look = tone[toast.type];
 
   return (
     <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, { paddingTop: insets.top + spacing.sm }]}>
@@ -89,16 +92,16 @@ export function ToastHost() {
         }}
       >
         {/* The container is not itself a control, so the message and the action are separate focus targets. */}
-        <View style={[styles.toast, shadow.md, { backgroundColor: t.bg }]}>
+        <View style={[styles.toast, shadow.md, { backgroundColor: look.bg }]}>
           <Pressable
             onPress={hide}
             accessibilityRole="alert"
             accessibilityLabel={toast.message}
-            accessibilityHint="Double tap to dismiss"
+            accessibilityHint={t('Double tap to dismiss')}
             style={styles.message}
           >
-            <Ionicons name={t.icon} size={22} color={t.fg} />
-            <Text maxFontSizeMultiplier={MAX_FONT_SCALE} style={[styles.text, { color: t.fg }]} numberOfLines={4}>
+            <Ionicons name={look.icon} size={22} color={look.fg} />
+            <Text maxFontSizeMultiplier={MAX_FONT_SCALE} style={[styles.text, { color: look.fg }]} numberOfLines={4}>
               {toast.message}
             </Text>
           </Pressable>
@@ -112,9 +115,9 @@ export function ToastHost() {
                 hide();
                 run();
               }}
-              style={[styles.action, { borderColor: t.fg }]}
+              style={[styles.action, { borderColor: look.fg }]}
             >
-              <Text maxFontSizeMultiplier={MAX_FONT_SCALE} style={[styles.actionText, { color: t.fg }]}>
+              <Text maxFontSizeMultiplier={MAX_FONT_SCALE} style={[styles.actionText, { color: look.fg }]}>
                 {toast.action.label}
               </Text>
             </Pressable>

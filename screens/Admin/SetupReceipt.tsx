@@ -5,6 +5,7 @@ import { useApi } from '../../api/useApi';
 import { Button, Card, ErrorState, InfoBanner, ListSkeleton, Screen, Segmented, SectionHeader, Text, TextField, showMessage } from '../../components/ui';
 import { useFetch } from '../../hooks/useFetch';
 import { colors, hitSlop, spacing } from '../../theme';
+import { t } from '../../i18n';
 
 type FieldType = 'Amount' | 'Text';
 type Row = { key: number; name: string; type: FieldType };
@@ -61,12 +62,12 @@ export default function SetupReceipt() {
   const add = () => setRows((list) => [...list, { key: nextKey.current++, name: '', type: 'Text' }]);
 
   const validate = (): string | null => {
-    if (!currency) return 'Please select a currency';
+    if (!currency) return t('Please select a currency');
     const names = rows.map((r) => r.name.trim());
-    if (names.length === 0) return 'Add at least one field';
-    if (names.some((n) => !n)) return 'Every field needs a name';
-    if (new Set(names.map((n) => n.toLowerCase())).size !== names.length) return 'Field names must be unique';
-    if (!rows.some((r) => r.type === 'Amount')) return 'Add at least one Amount field';
+    if (names.length === 0) return t('Add at least one field');
+    if (names.some((n) => !n)) return t('Every field needs a name');
+    if (new Set(names.map((n) => n.toLowerCase())).size !== names.length) return t('Field names must be unique');
+    if (!rows.some((r) => r.type === 'Amount')) return t('Add at least one Amount field');
     return null;
   };
 
@@ -82,7 +83,7 @@ export default function SetupReceipt() {
       Date: '',
     });
     setSaving(false);
-    if (res.ok) showMessage({ message: 'Receipt format saved successfully', type: 'success' });
+    if (res.ok) showMessage({ message: t('Receipt format saved successfully'), type: 'success' });
   };
 
   if (loading) {
@@ -102,9 +103,9 @@ export default function SetupReceipt() {
 
   return (
     <Screen>
-      <InfoBanner>Define the fields on your receipts. Changes apply to receipts you create from now on.</InfoBanner>
+      <InfoBanner>{t('Define the fields on your receipts. Changes apply to receipts you create from now on.')}</InfoBanner>
 
-      <SectionHeader title="Currency" />
+      <SectionHeader title={t('Currency')} />
       <Segmented
         options={[
           { value: 'USD', label: 'USD' },
@@ -117,15 +118,15 @@ export default function SetupReceipt() {
         }}
       />
 
-      <SectionHeader title="Fields" />
+      <SectionHeader title={t('Fields')} />
       <View style={{ gap: spacing.md }}>
         {rows.map((r) => (
           <Card key={r.key}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
-              <TextField containerStyle={{ flex: 1 }} label="Field name" placeholder="e.g. Water" value={r.name} onChangeText={(v) => update(r.key, { name: v })} />
+              <TextField containerStyle={{ flex: 1 }} label={t('Field name')} placeholder={t('e.g. Water')} value={r.name} onChangeText={(v) => update(r.key, { name: v })} />
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Remove ${r.name || 'field'}`}
+                accessibilityLabel={t('Remove {name}', { name: r.name || t('field') })}
                 hitSlop={hitSlop}
                 onPress={() => remove(r.key)}
                 style={{ marginTop: 22, width: 44, height: 52, alignItems: 'center', justifyContent: 'center' }}
@@ -136,8 +137,8 @@ export default function SetupReceipt() {
             <View style={{ marginTop: spacing.md }}>
               <Segmented
                 options={[
-                  { value: 'Amount', label: 'Amount' },
-                  { value: 'Text', label: 'Text / note' },
+                  { value: 'Amount', label: t('Amount') },
+                  { value: 'Text', label: t('Text / note') },
                 ]}
                 value={r.type}
                 onChange={(v) => update(r.key, { type: v })}
@@ -147,7 +148,7 @@ export default function SetupReceipt() {
         ))}
       </View>
 
-      <Button title="Add field" icon="add" variant="secondary" onPress={add} style={{ marginTop: spacing.lg }} />
+      <Button title={t('Add field')} icon="add" variant="secondary" onPress={add} style={{ marginTop: spacing.lg }} />
 
       {formError ? (
         <Text variant="caption" color={colors.danger} style={{ marginTop: spacing.lg }} accessibilityLiveRegion="polite">
@@ -155,7 +156,7 @@ export default function SetupReceipt() {
         </Text>
       ) : null}
 
-      <Button title="Save format" loading={saving} onPress={save} style={{ marginTop: spacing.xl }} />
+      <Button title={t('Save format')} loading={saving} onPress={save} style={{ marginTop: spacing.xl }} />
     </Screen>
   );
 }

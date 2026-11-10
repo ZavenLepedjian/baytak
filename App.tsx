@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+// First, so the language is decided before any other module (even one that translates a constant when it loads).
+import './i18n';
 import { StatusBar } from 'expo-status-bar';
 import { Asset } from 'expo-asset';
 import { useFonts } from 'expo-font';
@@ -30,7 +32,6 @@ export default function App() {
     IBMPlexSansArabic_700Bold,
   });
   const [assetsReady, setAssetsReady] = useState(false);
-
   useEffect(() => {
     Asset.loadAsync([require('./assets/images/login-background.jpg')])
       .catch(() => {})

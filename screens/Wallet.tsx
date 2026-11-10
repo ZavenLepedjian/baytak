@@ -7,6 +7,7 @@ import { formatAmount, formatDate, fromYmd, toYmd } from '../functions/format';
 import { newId } from '../functions/id';
 import { useFetch } from '../hooks/useFetch';
 import { colors, radius, spacing } from '../theme';
+import { t, ltr } from '../i18n';
 
 type Currency = 'USD' | 'LBP';
 type TransactionType = 'income' | 'expense';
@@ -40,7 +41,7 @@ function selectWallet(raw: unknown): WalletData {
   };
 }
 
-const money = (value: number, currency: Currency) => `${value < 0 ? '-' : ''}${formatAmount(Math.abs(value), currency)} ${currency}`;
+const money = (value: number, currency: Currency) => ltr(`${value < 0 ? '-' : ''}${formatAmount(Math.abs(value), currency)} ${currency}`);
 
 export default function Wallet() {
   const api = useApi();
@@ -77,13 +78,13 @@ export default function Wallet() {
     setSheetOpen(true);
   };
 
-  const openEdit = (t: Transaction) => {
-    setEditing(t);
-    setType(t.type);
-    setCurrency(t.currency);
-    setAmount(String(t.amount));
-    setDescription(t.description);
-    setDate(fromYmd(t.date));
+  const openEdit = (entry: Transaction) => {
+    setEditing(entry);
+    setType(entry.type);
+    setCurrency(entry.currency);
+    setAmount(String(entry.amount));
+    setDescription(entry.description);
+    setDate(fromYmd(entry.date));
     setErrors({});
     setSheetOpen(true);
   };
@@ -91,9 +92,9 @@ export default function Wallet() {
   const save = async () => {
     const value = Number(amount.replace(',', '.'));
     const next: typeof errors = {};
-    if (!amount || Number.isNaN(value) || value <= 0) next.amount = 'Enter an amount greater than 0';
-    else if (Math.round(value * 100) / 100 !== value) next.amount = 'Use at most 2 decimal places';
-    if (!description.trim()) next.description = 'Add a short description';
+    if (!amount || Number.isNaN(value) || value <= 0) next.amount = t('Enter an amount greater than 0');
+    else if (Math.round(value * 100) / 100 !== value) next.amount = t('Use at most 2 decimal places');
+    if (!description.trim()) next.description = t('Add a short description');
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -106,7 +107,7 @@ export default function Wallet() {
 
     if (res.ok) {
       setSheetOpen(false);
-      showMessage({ message: editing ? 'Entry updated' : 'Entry added', type: 'success' });
+      showMessage({ message: editing ? t('Entry updated') : t('Entry added'), type: 'success' });
       void refetch();
     }
   };
@@ -119,7 +120,7 @@ export default function Wallet() {
     setConfirmDelete(false);
     if (res.ok) {
       setSheetOpen(false);
-      showMessage({ message: 'Entry deleted', type: 'success' });
+      showMessage({ message: t('Entry deleted'), type: 'success' });
       void refetch();
     }
   };
@@ -145,7 +146,7 @@ export default function Wallet() {
     <Screen refreshing={refreshing} onRefresh={refetch}>
       <Card>
         <Text variant="caption" color={colors.textMuted}>
-          Your wallet balance
+          {t('Your wallet balance')}
         </Text>
         <Text numeral variant="display" adjustsFontSizeToFit numberOfLines={1} style={{ fontSize: 32, lineHeight: 40 }}>
           {money(balances[primaryCurrency], primaryCurrency)}
@@ -157,14 +158,14 @@ export default function Wallet() {
         ) : null}
       </Card>
 
-      <Button title="Add entry" icon="add" onPress={openNew} style={{ marginTop: spacing.lg }} />
+      <Button title={t('Add entry')} icon="add" onPress={openNew} style={{ marginTop: spacing.lg }} />
 
       <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
         {list.length === 0 ? (
-          <EmptyState icon="wallet-outline" title="No entries yet" message="Track your income and expenses. Add your first entry above." />
+          <EmptyState icon="wallet-outline" title={t('No entries yet')} message={t('Track your income and expenses. Add your first entry above.')} />
         ) : (
-          list.map((t) => (
-            <Card key={t.id} onPress={() => openEdit(t)} accessibilityLabel={`${t.type === 'income' ? 'Income' : 'Expense'}: ${t.description}, ${money(t.amount, t.currency)}. Tap to edit`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          list.map((entry) => (
+            <Card key={entry.id} onPress={() => openEdit(entry)} accessibilityLabel={t('{type}: {description}, {amount}. Tap to edit', { type: entry.type === 'income' ? t('Income') : t('Expense'), description: entry.description, amount: money(entry.amount, entry.currency) })} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
               <View
                 style={{
                   width: 40,
@@ -172,22 +173,22 @@ export default function Wallet() {
                   borderRadius: radius.md,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: t.type === 'income' ? colors.primarySoft : colors.surfaceMuted,
+                  backgroundColor: entry.type === 'income' ? colors.primarySoft : colors.surfaceMuted,
                 }}
               >
-                <Ionicons name={t.type === 'income' ? 'arrow-down' : 'arrow-up'} size={18} color={t.type === 'income' ? colors.primary : colors.textMuted} />
+                <Ionicons name={entry.type === 'income' ? 'arrow-down' : 'arrow-up'} size={18} color={entry.type === 'income' ? colors.primary : colors.textMuted} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text variant="bodyStrong" numberOfLines={1}>
-                  {t.description}
+                  {entry.description}
                 </Text>
                 <Text variant="caption" color={colors.textMuted}>
-                  {formatDate(fromYmd(t.date))}
+                  {formatDate(fromYmd(entry.date))}
                 </Text>
               </View>
-              <Text numeral variant="bodyStrong" color={t.type === 'income' ? colors.primaryDeep : colors.text}>
-                {t.type === 'income' ? '+' : '-'}
-                {money(t.amount, t.currency)}
+              <Text numeral variant="bodyStrong" color={entry.type === 'income' ? colors.primaryDeep : colors.text}>
+                {entry.type === 'income' ? '+' : '-'}
+                {money(entry.amount, entry.currency)}
               </Text>
             </Card>
           ))
@@ -195,15 +196,15 @@ export default function Wallet() {
       </View>
 
       {data?.hasMore && limit < 500 ? (
-        <Button title="Show more" variant="secondary" onPress={() => setLimit((l) => Math.min(l + PAGE, 500))} style={{ marginTop: spacing.lg }} />
+        <Button title={t('Show more')} variant="secondary" onPress={() => setLimit((l) => Math.min(l + PAGE, 500))} style={{ marginTop: spacing.lg }} />
       ) : null}
 
-      <Sheet visible={sheetOpen} onClose={() => !saving && setSheetOpen(false)} title={editing ? 'Edit entry' : 'New entry'}>
+      <Sheet visible={sheetOpen} onClose={() => !saving && setSheetOpen(false)} title={editing ? t('Edit entry') : t('New entry')}>
         <View style={{ gap: spacing.lg }}>
           <Segmented
             options={[
-              { value: 'expense', label: 'Expense' },
-              { value: 'income', label: 'Income' },
+              { value: 'expense', label: t('Expense') },
+              { value: 'income', label: t('Income') },
             ]}
             value={type}
             onChange={setType}
@@ -217,7 +218,7 @@ export default function Wallet() {
             onChange={setCurrency}
           />
           <TextField
-            label={`Amount (${currency})`}
+            label={t('Amount ({currency})', { currency })}
             icon="cash-outline"
             placeholder={currency === 'USD' ? '0.00' : '0'}
             keyboardType="decimal-pad"
@@ -225,18 +226,18 @@ export default function Wallet() {
             onChangeText={(v) => setAmount(v.replace(/[^0-9.,]/g, ''))}
             error={errors.amount}
           />
-          <TextField label="Description" icon="create-outline" placeholder="What was it for?" maxLength={200} value={description} onChangeText={setDescription} error={errors.description} />
-          <DateField label="Date" value={date} onChange={setDate} />
-          <Button title={editing ? 'Save changes' : 'Add entry'} loading={saving} onPress={save} />
-          {editing ? <Button title="Delete entry" variant="danger" disabled={saving} onPress={() => setConfirmDelete(true)} /> : null}
+          <TextField label={t('Description')} icon="create-outline" placeholder={t('What was it for?')} maxLength={200} value={description} onChangeText={setDescription} error={errors.description} />
+          <DateField label={t('Date')} value={date} onChange={setDate} />
+          <Button title={editing ? t('Save changes') : t('Add entry')} loading={saving} onPress={save} />
+          {editing ? <Button title={t('Delete entry')} variant="danger" disabled={saving} onPress={() => setConfirmDelete(true)} /> : null}
         </View>
       </Sheet>
 
       <ConfirmDialog
         visible={confirmDelete}
-        title="Delete this entry?"
-        message={editing ? `"${editing.description}" will be removed from your wallet.` : undefined}
-        confirmTitle="Delete"
+        title={t('Delete this entry?')}
+        message={editing ? t('"{description}" will be removed from your wallet.', { description: editing.description }) : undefined}
+        confirmTitle={t('Delete')}
         destructive
         loading={saving}
         onCancel={() => setConfirmDelete(false)}

@@ -22,3 +22,11 @@ export function Text({ variant = 'body', color = colors.text, align, numeral, st
     />
   );
 }
+
+/** Fills the `{name}` holes of a translated sentence with elements (a link, a bold phone number), wherever the language puts them. */
+export function fillNodes(template: string, nodes: Record<string, React.ReactNode>): React.ReactNode[] {
+  return template.split(/(\{\w+\})/).map((part, i) => {
+    const name = /^\{(\w+)\}$/.exec(part)?.[1];
+    return name !== undefined && name in nodes ? <React.Fragment key={i}>{nodes[name]}</React.Fragment> : part;
+  });
+}

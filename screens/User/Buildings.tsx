@@ -8,6 +8,7 @@ import { useFetch } from '../../hooks/useFetch';
 import { useLocation } from '../../location/LocationProvider';
 import type { ScreenProps } from '../../navigation/types';
 import { colors, radius, spacing } from '../../theme';
+import { t } from '../../i18n';
 
 type Building = { label: string; value: number | string; latitude?: number | string; longitude?: number | string };
 
@@ -61,19 +62,19 @@ export default function Buildings({ navigation }: ScreenProps<'Buildings'>) {
 
   return (
     <Screen refreshing={refreshing} onRefresh={refetch}>
-      <TextField icon="search-outline" placeholder="Search buildings" value={query} onChangeText={setQuery} returnKeyType="search" autoCorrect={false} />
+      <TextField icon="search-outline" placeholder={t('Search buildings')} value={query} onChangeText={setQuery} returnKeyType="search" autoCorrect={false} />
 
       {filtering ? (
         <View style={{ flexDirection: 'row', marginTop: spacing.md }}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Showing buildings near you. Tap to show all buildings"
+            accessibilityLabel={t('Showing buildings near you. Tap to show all buildings')}
             onPress={() => setNearbyOnly(false)}
             style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2, backgroundColor: colors.primarySoft, paddingVertical: 6, paddingStart: spacing.md, paddingEnd: spacing.sm, minHeight: 44, borderRadius: radius.md }}
           >
             <Ionicons name="navigate" size={14} color={colors.primaryDeep} />
             <Text variant="label" color={colors.primaryDeep}>
-              Near you
+              {t('Near you')}
             </Text>
             <Ionicons name="close-circle" size={18} color={colors.primaryDeep} />
           </Pressable>
@@ -97,15 +98,15 @@ export default function Buildings({ navigation }: ScreenProps<'Buildings'>) {
       {buildings.length === 0 ? (
         <EmptyState
           icon="business-outline"
-          title={query ? 'No matches' : filtering ? 'No buildings near you' : 'No buildings yet'}
+          title={query ? t('No matches') : filtering ? t('No buildings near you') : t('No buildings yet')}
           message={
             query
-              ? 'Try a different name.'
+              ? t('Try a different name.')
               : filtering
-                ? `We could not find a registered building within ${NEARBY_BUILDING_RADIUS_M / 1000} km.`
-                : 'Ask your building administrator to register the building first.'
+                ? t('We could not find a registered building within {km} km.', { km: NEARBY_BUILDING_RADIUS_M / 1000 })
+                : t('Ask your building administrator to register the building first.')
           }
-          actionTitle={filtering && !query ? 'Show all buildings' : undefined}
+          actionTitle={filtering && !query ? t('Show all buildings') : undefined}
           onAction={filtering && !query ? () => setNearbyOnly(false) : undefined}
         />
       ) : null}

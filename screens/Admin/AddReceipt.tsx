@@ -3,6 +3,7 @@ import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApi } from '../../api/useApi';
 import { PhotoPicker, MAX_RECEIPT_PHOTOS, usePhotoUploads } from '../../components/ReceiptPhotos';
+import { billedToText, ShareReceiptSheet } from '../../components/ShareReceipt';
 import {
   Button,
   Card,
@@ -24,7 +25,9 @@ import {
 } from '../../components/ui';
 import { amountValue, normalizeAmountInput } from '../../functions/amount';
 import { currencyLabel, formatAmount, formatDate, fromYmd, toYmd } from '../../functions/format';
+import type { NoticeModel } from '../../functions/receiptNotice';
 import { STARTER_TEMPLATES } from '../../functions/templates';
+import { t, tn, ltr } from '../../i18n';
 import { useFetch } from '../../hooks/useFetch';
 import type { ScreenProps } from '../../navigation/types';
 import { colors, HIT, radius, spacing } from '../../theme';
@@ -60,11 +63,11 @@ function selectFormat(raw: unknown): FormatState {
 
 function selectStarts(raw: unknown): Starts {
   const r = (raw && typeof raw === 'object' ? raw : {}) as any;
-  const templates: SavedTemplate[] = (Array.isArray(r.templates) ? r.templates : []).map((t: any) => ({
-    id: Number(t.id),
-    name: String(t.name ?? ''),
-    currency: asCurrency(t.currency),
-    customFields: (Array.isArray(t.customFields) ? t.customFields : []).map(asField),
+  const templates: SavedTemplate[] = (Array.isArray(r.templates) ? r.templates : []).map((template: any) => ({
+    id: Number(template.id),
+    name: String(template.name ?? ''),
+    currency: asCurrency(template.currency),
+    customFields: (Array.isArray(template.customFields) ? template.customFields : []).map(asField),
   }));
   const last = r.last && Array.isArray(r.last.customFields) ? { currency: asCurrency(r.last.currency), date: String(r.last.date ?? ''), customFields: r.last.customFields.map(asField) } : null;
   return { templates, last };
@@ -76,6 +79,12 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
   const api = useApi();
   const { data: format, loading, error, refetch } = useFetch<FormatState>('get-receipt-format', { select: selectFormat });
   const { data: starts, refetch: refetchStarts } = useFetch<Starts>('receipt/templates', { select: selectStarts });
+  const { data: building } = useFetch<{ buildingName: string; apartmentCount: number }>('building/overview', {
+    select: (raw) => {
+      const r = (raw && typeof raw === 'object' ? raw : {}) as { buildingName?: string; apartmentCount?: number };
+      return { buildingName: r.buildingName ?? '', apartmentCount: Number(r.apartmentCount ?? 0) };
+    },
+  });
   const uploads = usePhotoUploads(MAX_RECEIPT_PHOTOS);
 
   const nextKey = useRef(1);
@@ -91,6 +100,8 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
   const [templateName, setTemplateName] = useState<string | null>(null);
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [deleting, setDeleting] = useState<SavedTemplate | null>(null);
+  const [shareModel, setShareModel] = useState<NoticeModel | null>(null);
+  const [firstReceipt, setFirstReceipt] = useState(false);
   const initialised = useRef(false);
 
   const apartments = route.params?.apartments ?? [];
@@ -111,7 +122,7 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
       initialised.current = true;
       setCurrency(format.currency);
       setLines(toLines(amountsFirst(format.fields).map((f) => ({ name: f.fieldName, type: f.type })), false, format.currency));
-      setSource('Your building format');
+      setSource(t('Your building format'));
     } else if (format.kind === 'setup') {
       initialised.current = true;
       setLines(toLines(STARTER_TEMPLATES[0].lines, false, 'USD'));
@@ -130,7 +141,7 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
   const removeLine = (key: number) => setLines((list) => list.filter((l) => l.key !== key));
   const addLine = (type: Line['type']) => {
     if (lines.length >= MAX_LINES) {
-      showMessage({ message: `A receipt can have at most ${MAX_LINES} lines`, type: 'warning' });
+      showMessage({ message: t('A receipt can have at most {max} lines', { max: MAX_LINES }), type: 'warning' });
       return;
     }
     setLines((list) => [...list, { key: nextKey.current++, name: '', type, value: '' }]);
@@ -152,16 +163,16 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
     const groups: { title: string; items: StartOption[] }[] = [];
     if (format?.kind === 'ready') {
       groups.push({
-        title: 'Your building',
+        title: t('Your building'),
         items: [
           {
             id: 'format',
-            title: 'Building format',
+            title: t('Building format'),
             subtitle: format.fields.map((f) => f.fieldName).join(', '),
             apply: () => {
               setCurrency(format.currency);
               setLines(toLines(amountsFirst(format.fields).map((f) => ({ name: f.fieldName, type: f.type })), false, format.currency));
-              setSource('Your building format');
+              setSource(t('Your building format'));
             },
           },
         ],
@@ -170,16 +181,16 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
     if (starts?.last) {
       const last = starts.last;
       groups.push({
-        title: 'Repeat',
+        title: t('Repeat'),
         items: [
           {
             id: 'last',
-            title: 'Same as the last receipt',
-            subtitle: `${formatDate(fromYmd(last.date))}, lines and amounts`,
+            title: t('Same as the last receipt'),
+            subtitle: t('{date}, lines and amounts', { date: formatDate(fromYmd(last.date)) }),
             apply: () => {
               setCurrency(last.currency);
               setLines(toLines(last.customFields.map((f) => ({ name: f.fieldName, type: f.type, value: f.value })), true, last.currency));
-              setSource(`Last receipt, ${formatDate(fromYmd(last.date))}`);
+              setSource(t('Last receipt, {date}', { date: formatDate(fromYmd(last.date)) }));
             },
           },
         ],
@@ -187,22 +198,22 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
     }
     if (starts && starts.templates.length > 0) {
       groups.push({
-        title: 'Your templates',
-        items: starts.templates.map((t) => ({
-          id: `t${t.id}`,
-          title: t.name,
-          subtitle: `${t.currency} · ${t.customFields.map((f) => f.fieldName).join(', ')}`,
+        title: t('Your templates'),
+        items: starts.templates.map((template) => ({
+          id: `template${template.id}`,
+          title: template.name,
+          subtitle: `${template.currency} · ${template.customFields.map((f) => f.fieldName).join(', ')}`,
           apply: () => {
-            setCurrency(t.currency);
-            setLines(toLines(t.customFields.map((f) => ({ name: f.fieldName, type: f.type })), false, t.currency));
-            setSource(`Template: ${t.name}`);
+            setCurrency(template.currency);
+            setLines(toLines(template.customFields.map((f) => ({ name: f.fieldName, type: f.type })), false, template.currency));
+            setSource(t('Template: {name}', { name: template.name }));
           },
-          remove: () => setDeleting(t),
+          remove: () => setDeleting(template),
         })),
       });
     }
     groups.push({
-      title: 'Starters',
+      title: t('Starters'),
       items: STARTER_TEMPLATES.map((s) => ({
         id: `s-${s.id}`,
         title: s.name,
@@ -220,7 +231,7 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
   const saveTemplate = async () => {
     const name = (templateName ?? '').trim();
     if (!name) {
-      showMessage({ message: 'Give the template a name', type: 'warning' });
+      showMessage({ message: t('Give the template a name'), type: 'warning' });
       return;
     }
     const used = lines.filter((l) => l.name.trim() !== '');
@@ -233,8 +244,8 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
     setSavingTemplate(false);
     if (res.ok) {
       setTemplateName(null);
-      setSource(`Template: ${name}`);
-      showMessage({ message: 'Template saved', type: 'success' });
+      setSource(t('Template: {name}', { name }));
+      showMessage({ message: t('Template saved'), type: 'success' });
       void refetchStarts();
     }
   };
@@ -253,12 +264,12 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
   );
 
   const check = (): string | null => {
-    if (total <= 0) return 'Enter at least one amount greater than 0';
-    if (sendLines.some((l) => l.name.trim() === '')) return 'Every line with a value needs a name';
+    if (total <= 0) return t('Enter at least one amount greater than 0');
+    if (sendLines.some((l) => l.name.trim() === '')) return t('Every line with a value needs a name');
     const names = sendLines.map((l) => l.name.trim().toLowerCase());
-    if (new Set(names).size !== names.length) return 'Line names must be different from each other';
-    if (uploads.uploading) return 'Wait for the photos to finish uploading';
-    if (uploads.failed) return 'Retry or remove the photo that did not upload';
+    if (new Set(names).size !== names.length) return t('Line names must be different from each other');
+    if (uploads.uploading) return t('Wait for the photos to finish uploading');
+    if (uploads.failed) return t('Retry or remove the photo that did not upload');
     return null;
   };
 
@@ -271,11 +282,11 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
 
   const summary = () => {
     const rows = sendLines.map((l) =>
-      l.type === 'Amount' ? `${l.name.trim()}: ${formatAmount(amountValue(l.value), currency)} ${unit}` : `${l.name.trim()}: ${l.value.trim().slice(0, 60)}`,
+      l.type === 'Amount' ? `${l.name.trim()}: ${ltr(`${formatAmount(amountValue(l.value), currency)} ${unit}`)}` : `${l.name.trim()}: ${l.value.trim().slice(0, 60)}`,
     );
-    const who = apartments.length ? `${apartments.length} selected apartment${apartments.length > 1 ? 's' : ''}` : 'the whole building';
-    const photos = uploads.readyIds.length ? `\n${uploads.readyIds.length} photo${uploads.readyIds.length > 1 ? 's' : ''} attached.` : '';
-    return `${rows.join('\n')}\n\nTotal ${formatAmount(total, currency)} ${unit} for ${who}.${photos}\nYou won't be able to edit or delete it afterwards.`;
+    const who = apartments.length ? tn('{n} selected apartment|{n} selected apartments', apartments.length) : t('the whole building');
+    const photos = uploads.readyIds.length ? `\n${tn('{n} photo attached.|{n} photos attached.', uploads.readyIds.length)}` : '';
+    return `${rows.join('\n')}\n\n${t('Total {amount} for {who}.', { amount: ltr(`${formatAmount(total, currency)} ${unit}`), who })}${photos}\n${t("You won't be able to edit or delete it afterwards.")}`;
   };
 
   const publish = async () => {
@@ -292,7 +303,20 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
     setSaving(false);
     setConfirm(false);
     if (res.ok) {
-      showMessage({ message: 'Receipt added successfully', type: 'success' });
+      showMessage({ message: t('Receipt added successfully'), type: 'success' });
+      // What was just issued, ready to send to the building's group. Built before the form is cleared.
+      setFirstReceipt(starts?.last == null);
+      setShareModel({
+        buildingName: building?.buildingName || t('Your building'),
+        date: formatDate(date),
+        lines: sendLines.map((l) =>
+          l.type === 'Amount'
+            ? { name: l.name.trim(), amount: `${formatAmount(amountValue(l.value), currency)} ${unit}` }
+            : { name: l.name.trim(), note: l.value.trim() },
+        ),
+        total: `${formatAmount(total, currency)} ${unit}`,
+        billedTo: billedToText(apartments.map((a) => a.appartmentNumber), building?.apartmentCount ?? 0),
+      });
       setLines((list) => list.map((l) => ({ ...l, value: '' })));
       uploads.clear();
       setDate(new Date());
@@ -318,14 +342,14 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
   if (format?.kind === 'register') {
     return (
       <Screen scroll={false}>
-        <EmptyState icon="home-outline" title="Register your apartment first" message="You need to be part of a building before you can issue receipts." actionTitle="Join a building" onAction={() => navigation.navigate('JoinBuilding')} />
+        <EmptyState icon="home-outline" title={t('Register your apartment first')} message={t('You need to be part of a building before you can issue receipts.')} actionTitle={t('Join a building')} onAction={() => navigation.navigate('JoinBuilding')} />
       </Screen>
     );
   }
   if (format?.kind === 'building') {
     return (
       <Screen scroll={false}>
-        <EmptyState icon="business-outline" title="Set up your building first" message="Add your building details so residents can join it, then come back to issue receipts." actionTitle="Set up building" onAction={() => navigation.navigate('SetupBuilding')} />
+        <EmptyState icon="business-outline" title={t('Set up your building first')} message={t('Add your building details so residents can join it, then come back to issue receipts.')} actionTitle={t('Set up building')} onAction={() => navigation.navigate('SetupBuilding')} />
       </Screen>
     );
   }
@@ -335,13 +359,13 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
 
   return (
     <Screen>
-      <InfoBanner icon="warning-outline">Once a receipt is added it cannot be edited or deleted. Check the lines and amounts before you add it.</InfoBanner>
+      <InfoBanner icon="warning-outline">{t('Once a receipt is added it cannot be edited or deleted. Check the lines and amounts before you add it.')}</InfoBanner>
 
       <Card flush style={{ marginTop: spacing.lg }}>
-        <ListRow icon="albums-outline" title="Start from" subtitle={source || 'Choose a starting point'} onPress={() => setStartOpen(true)} />
+        <ListRow icon="albums-outline" title={t('Start from')} subtitle={source || t('Choose a starting point')} onPress={() => setStartOpen(true)} />
       </Card>
 
-      <SectionHeader title="Currency" />
+      <SectionHeader title={t('Currency')} />
       <Segmented
         options={[
           { value: 'USD', label: 'USD' },
@@ -357,11 +381,11 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
       ) : null}
 
       <SectionHeader
-        title="Lines"
+        title={t('Lines')}
         action={
-          <Pressable accessibilityRole="button" accessibilityLabel="Save these lines as a template" hitSlop={8} onPress={() => setTemplateName('')}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Save these lines as a template')} hitSlop={8} onPress={() => setTemplateName('')}>
             <Text variant="bodyStrong" color={colors.primary}>
-              Save as template
+              {t('Save as template')}
             </Text>
           </Pressable>
         }
@@ -372,14 +396,14 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
             <LineRow key={line.key} line={line} currency={currency} onChange={(patch) => updateLine(line.key, patch)} onRemove={() => removeLine(line.key)} />
           ))}
           <View style={styles.addRow}>
-            <Button small variant="secondary" icon="add" title="Add amount" onPress={() => addLine('Amount')} style={{ flex: 1 }} />
-            <Button small variant="secondary" icon="create-outline" title="Add note" onPress={() => addLine('Text')} style={{ flex: 1 }} />
+            <Button small variant="secondary" icon="add" title={t('Add amount')} onPress={() => addLine('Amount')} style={{ flex: 1 }} />
+            <Button small variant="secondary" icon="create-outline" title={t('Add note')} onPress={() => addLine('Text')} style={{ flex: 1 }} />
           </View>
-          <DateField label="Receipt date" value={date} onChange={setDate} />
+          <DateField label={t('Receipt date')} value={date} onChange={setDate} />
         </View>
       </Card>
 
-      <SectionHeader title="Photos of the bill (optional)" />
+      <SectionHeader title={t('Photos of the bill (optional)')} />
       <Card>
         <PhotoPicker uploads={uploads} />
       </Card>
@@ -387,18 +411,18 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
       <Card flush style={{ marginTop: spacing.lg }}>
         <ListRow
           icon="people-outline"
-          title="Apartments"
-          subtitle={apartments.length ? apartments.map((a) => a.appartmentNumber).join(' · ') : 'Everyone in the building'}
+          title={t('Apartments')}
+          subtitle={apartments.length ? apartments.map((a) => a.appartmentNumber).join(' · ') : t('Everyone in the building')}
           onPress={() => navigation.navigate('SelectApartments', { selected: apartments })}
         />
       </Card>
 
       <View style={styles.total}>
         <Text variant="bodyStrong" color={colors.primaryDeep}>
-          Total
+          {t('Total')}
         </Text>
         <Text variant="title" color={colors.primaryDeep}>
-          {formatAmount(total, currency)} {unit}
+          {ltr(`${formatAmount(total, currency)} ${unit}`)}
         </Text>
       </View>
       {formError ? (
@@ -410,13 +434,15 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
         </View>
       ) : null}
 
-      <Button title="Add receipt" icon="paper-plane-outline" onPress={requestPublish} style={{ marginTop: spacing.xl }} />
+      <Button title={t('Add receipt')} icon="paper-plane-outline" onPress={requestPublish} style={{ marginTop: spacing.xl }} />
+
+      <ShareReceiptSheet visible={shareModel !== null} model={shareModel} first={firstReceipt} onClose={() => setShareModel(null)} />
 
       <ConfirmDialog
         visible={confirm}
-        title="Add this receipt?"
+        title={t('Add this receipt?')}
         message={summary()}
-        confirmTitle="Add receipt"
+        confirmTitle={t('Add receipt')}
         loading={saving}
         onCancel={() => setConfirm(false)}
         onConfirm={publish}
@@ -424,9 +450,9 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
 
       <ConfirmDialog
         visible={!!pendingStart}
-        title="Replace what you typed?"
-        message="The lines and amounts on this screen will be replaced."
-        confirmTitle="Replace"
+        title={t('Replace what you typed?')}
+        message={t('The lines and amounts on this screen will be replaced.')}
+        confirmTitle={t('Replace')}
         onCancel={() => setPendingStart(null)}
         onConfirm={() => {
           pendingStart?.apply();
@@ -436,25 +462,25 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
 
       <ConfirmDialog
         visible={!!deleting}
-        title="Delete this template?"
-        message={deleting ? `"${deleting.name}" will be removed. Receipts you already issued are not affected.` : undefined}
-        confirmTitle="Delete"
+        title={t('Delete this template?')}
+        message={deleting ? t('"{name}" will be removed. Receipts you already issued are not affected.', { name: deleting.name }) : undefined}
+        confirmTitle={t('Delete')}
         destructive
         onCancel={() => setDeleting(null)}
         onConfirm={deleteTemplate}
       />
 
-      <Sheet visible={templateName !== null} onClose={() => setTemplateName(null)} title="Save as template">
+      <Sheet visible={templateName !== null} onClose={() => setTemplateName(null)} title={t('Save as template')}>
         <View style={{ gap: spacing.lg }}>
-          <TextField label="Template name" placeholder="e.g. Monthly fees" value={templateName ?? ''} onChangeText={setTemplateName} maxLength={60} autoFocus />
+          <TextField label={t('Template name')} placeholder={t('e.g. Monthly fees')} value={templateName ?? ''} onChangeText={setTemplateName} maxLength={60} autoFocus />
           <Text variant="caption" color={colors.textMuted}>
-            Saves the {currency} currency and the line names. Amounts are not saved: you type them for each receipt.
+            {t('Saves the {currency} currency and the line names. Amounts are not saved: you type them for each receipt.', { currency })}
           </Text>
-          <Button title="Save template" loading={savingTemplate} onPress={saveTemplate} />
+          <Button title={t('Save template')} loading={savingTemplate} onPress={saveTemplate} />
         </View>
       </Sheet>
 
-      <Sheet visible={startOpen} onClose={() => setStartOpen(false)} title="Start from">
+      <Sheet visible={startOpen} onClose={() => setStartOpen(false)} title={t('Start from')}>
         <View>
           {startOptions.map((group) => (
             <View key={group.title}>
@@ -476,7 +502,7 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
                         </Text>
                       </Pressable>
                       {item.remove ? (
-                        <Pressable style={styles.trash} accessibilityRole="button" accessibilityLabel={`Delete template ${item.title}`} onPress={item.remove} hitSlop={6}>
+                        <Pressable style={styles.trash} accessibilityRole="button" accessibilityLabel={t('Delete template {name}', { name: item.title })} onPress={item.remove} hitSlop={6}>
                           <Ionicons name="trash-outline" size={20} color={colors.danger} />
                         </Pressable>
                       ) : null}
@@ -495,14 +521,14 @@ export default function CreateReceipt({ navigation, route }: ScreenProps<'Create
 /** One line of the receipt: its name, and the amount (or the note) to go with it. Any line can be renamed or removed. */
 function LineRow({ line, currency, onChange, onRemove }: { line: Line; currency: Currency; onChange: (patch: Partial<Line>) => void; onRemove: () => void }) {
   const amount = line.type === 'Amount';
-  const typed = amount && line.value.replace(/\D/g, '').length >= 4 ? `${formatAmount(amountValue(line.value), currency)} ${currencyLabel(currency)}` : undefined;
+  const typed = amount && line.value.replace(/\D/g, '').length >= 4 ? ltr(`${formatAmount(amountValue(line.value), currency)} ${currencyLabel(currency)}`) : undefined;
   return (
     <View style={{ gap: spacing.sm }}>
       <View style={styles.lineTop}>
         <TextField
           containerStyle={{ flex: 1 }}
-          placeholder={amount ? 'Line name, e.g. Water' : 'Note title'}
-          accessibilityLabel={amount ? 'Amount line name' : 'Note title'}
+          placeholder={amount ? t('Line name, e.g. Water') : t('Note title')}
+          accessibilityLabel={amount ? t('Amount line name') : t('Note title')}
           value={line.name}
           onChangeText={(name) => onChange({ name })}
           maxLength={60}
@@ -511,21 +537,21 @@ function LineRow({ line, currency, onChange, onRemove }: { line: Line; currency:
           <TextField
             containerStyle={{ width: 132 }}
             placeholder={currency}
-            accessibilityLabel={`${line.name || 'Amount'} in ${currency}`}
+            accessibilityLabel={t('{name} in {currency}', { name: line.name || t('Amount'), currency })}
             keyboardType={currency === 'USD' ? 'decimal-pad' : 'number-pad'}
             value={line.value}
             onChangeText={(v) => onChange({ value: normalizeAmountInput(v, currency) })}
             helper={typed}
           />
         ) : null}
-        <Pressable style={styles.removeLine} accessibilityRole="button" accessibilityLabel={`Remove ${line.name || 'this line'}`} onPress={onRemove} hitSlop={6}>
+        <Pressable style={styles.removeLine} accessibilityRole="button" accessibilityLabel={t('Remove {name}', { name: line.name || t('this line') })} onPress={onRemove} hitSlop={6}>
           <Ionicons name="close" size={22} color={colors.textMuted} />
         </Pressable>
       </View>
       {amount ? null : (
         <TextField
-          placeholder="Optional note"
-          accessibilityLabel={`${line.name || 'Note'} text`}
+          placeholder={t('Optional note')}
+          accessibilityLabel={t('{name} text', { name: line.name || t('Note') })}
           multiline
           value={line.value}
           onChangeText={(value) => onChange({ value })}

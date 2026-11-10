@@ -1,4 +1,5 @@
 import { Platform, TextStyle, ViewStyle } from 'react-native';
+import { isArabic } from './i18n';
 
 /**
  * The Baytak world: a building's receipt book. The logo's teal carries the shell, buttons and door plates;
@@ -77,7 +78,8 @@ export const fonts = {
   body: { fontFamily: family.regular, fontSize: 16, lineHeight: 23 } as TextStyle,
   bodyStrong: { fontFamily: family.semibold, fontSize: 16, lineHeight: 23 } as TextStyle,
   caption: { fontFamily: family.regular, fontSize: 14, lineHeight: 20 } as TextStyle,
-  label: { fontFamily: family.semibold, fontSize: 12, lineHeight: 16, letterSpacing: 0.4 } as TextStyle,
+  /** Letter-spacing would pull apart the joined letters of Arabic, so it is only for Latin text. */
+  label: { fontFamily: family.semibold, fontSize: 12, lineHeight: 16, letterSpacing: isArabic() ? 0 : 0.4 } as TextStyle,
   /** Door-plate numerals and money: heaviest weight, fixed-width digits so columns align. */
   numeral: { fontFamily: family.bold, fontVariant: ['tabular-nums'] } as TextStyle,
 };

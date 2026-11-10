@@ -24,6 +24,7 @@ import { useFetch } from '../../hooks/useFetch';
 import type { RootStackParamList } from '../../navigation/types';
 import { colors, HIT, radius, spacing } from '../../theme';
 import { selectReceipts, totalsByCurrency } from '../Dashboard';
+import { t, tn } from '../../i18n';
 
 type Owed = { currency: string; amount: number };
 type Outstanding = Owed & { apartments: number; receipts: number };
@@ -72,18 +73,22 @@ function selectOverview(raw: unknown): Overview {
   };
 }
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
-
 /** Why an apartment is on the list, in words. */
 function reasonFor(a: Attention, lateAfterDays: number): string {
   const parts: string[] = [];
   if (a.overdueCount > 0) {
-    parts.push(`${plural(a.overdueCount, 'receipt')} unpaid for over ${lateAfterDays} days (oldest ${a.oldestUnpaidDays} days)`);
+    parts.push(
+      t('{receipts} unpaid for over {days} (oldest {oldest})', {
+        receipts: tn('{n} receipt|{n} receipts', a.overdueCount),
+        days: tn('{n} day|{n} days', lateAfterDays),
+        oldest: tn('{n} day|{n} days', a.oldestUnpaidDays),
+      }),
+    );
   }
   if (a.latePaidCount > 0) {
-    parts.push(`paid ${plural(a.latePaidCount, 'receipt')} late`);
+    parts.push(t('paid {receipts} late', { receipts: tn('{n} receipt|{n} receipts', a.latePaidCount) }));
   }
-  const text = parts.join(', ');
+  const text = parts.join(t(', '));
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
@@ -102,7 +107,7 @@ export default function AdminHome() {
 
   const openCollect = (receiptId?: number) => navigation.navigate('Tabs', { screen: 'Collect', params: receiptId ? { receiptId, at: Date.now() } : undefined });
 
-  const header = <Hero title={data?.hasBuilding && data.buildingName ? data.buildingName : 'Your building'} subtitle={subtitleFor(data)} />;
+  const header = <Hero title={data?.hasBuilding && data.buildingName ? data.buildingName : t('Your building')} subtitle={subtitleFor(data)} />;
 
   if (overview.loading && !data) {
     return (
@@ -123,9 +128,9 @@ export default function AdminHome() {
       <Screen tab header={header} scroll={false}>
         <EmptyState
           icon="business-outline"
-          title="Set up your building first"
-          message="Add your building so residents can join it. Your dashboard fills in once you have issued a receipt."
-          actionTitle="Set up building"
+          title={t('Set up your building first')}
+          message={t('Add your building so residents can join it. Your dashboard fills in once you have issued a receipt.')}
+          actionTitle={t('Set up building')}
           onAction={() => navigation.navigate('SetupBuilding')}
         />
       </Screen>
@@ -138,7 +143,7 @@ export default function AdminHome() {
       <Card
         flush
         onPress={() => navigation.navigate('PendingApartments')}
-        accessibilityLabel={`${plural(data.pendingRequests, 'join request')} waiting for your approval`}
+        accessibilityLabel={t('{requests} waiting for your approval', { requests: tn('{n} join request|{n} join requests', data.pendingRequests) })}
         style={{ marginBottom: spacing.lg }}
       >
         <View style={styles.row}>
@@ -146,12 +151,12 @@ export default function AdminHome() {
             <Ionicons name="person-add-outline" size={20} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text variant="bodyStrong">Join requests</Text>
+            <Text variant="bodyStrong">{t('Join requests')}</Text>
             <Text variant="caption" color={colors.textMuted}>
-              Approve or reject new apartments
+              {t('Approve or reject new apartments')}
             </Text>
           </View>
-          <Badge label={`${data.pendingRequests} pending`} tone="warning" />
+          <Badge label={t('{n} pending', { n: data.pendingRequests })} tone="warning" />
           <Ionicons name={chevronForward} size={18} color={colors.textFaint} />
         </View>
       </Card>
@@ -165,9 +170,9 @@ export default function AdminHome() {
         {joinRequests}
         <EmptyState
           icon="receipt-outline"
-          title="No receipts yet"
-          message="Issue your first receipt and this page shows who has paid, what is still owed and who needs a reminder."
-          actionTitle="New receipt"
+          title={t('No receipts yet')}
+          message={t('Issue your first receipt and this page shows who has paid, what is still owed and who needs a reminder.')}
+          actionTitle={t('New receipt')}
           onAction={() => navigation.navigate('CreateReceipt')}
         />
         {yours}
@@ -177,7 +182,12 @@ export default function AdminHome() {
 
   const latest = data.latest;
   const allPaid = latest.count > 0 && latest.unpaidCount === 0;
-  const headline = latest.count === 0 ? 'No apartments were billed' : allPaid ? 'Everyone has paid' : `${latest.paidCount} of ${latest.count} apartments have paid`;
+  const headline =
+    latest.count === 0
+      ? t('No apartments were billed')
+      : allPaid
+        ? t('Everyone has paid')
+        : tn('{paid} of {n} apartment has paid|{paid} of {n} apartments have paid', latest.count, { paid: latest.paidCount });
   const share = latest.count > 0 ? latest.paidCount / latest.count : 0;
 
   return (
@@ -187,29 +197,29 @@ export default function AdminHome() {
       {/* The newest receipt: one sentence of truth, the money, and how far along it is. */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${headline}. Collected ${formatMoney(latest.collected, latest.currency)} of ${formatMoney(latest.expected, latest.currency)}, receipt of ${formatDate(fromYmd(latest.date))}. Opens collection`}
+        accessibilityLabel={t('{headline}. Collected {collected} of {expected}, receipt of {date}. Opens collection', { headline, collected: formatMoney(latest.collected, latest.currency), expected: formatMoney(latest.expected, latest.currency), date: formatDate(fromYmd(latest.date)) })}
         onPress={() => openCollect(latest.id)}
       >
         <Text variant="title" importantForAccessibility="no">
           {headline}
         </Text>
         <Text numeral variant="body" color={colors.textMuted} style={{ marginTop: 2 }} importantForAccessibility="no">
-          Collected {formatMoney(latest.collected, latest.currency)} of {formatMoney(latest.expected, latest.currency)}
+          {t('Collected {collected} of {expected}', { collected: formatMoney(latest.collected, latest.currency), expected: formatMoney(latest.expected, latest.currency) })}
         </Text>
         <Text variant="caption" color={colors.textMuted} style={{ marginTop: 2 }} importantForAccessibility="no">
-          Latest receipt, {formatDate(fromYmd(latest.date))}
+          {t('Latest receipt, {date}', { date: formatDate(fromYmd(latest.date)) })}
         </Text>
         <ProgressBar share={share} />
       </Pressable>
-      <Button title="New receipt" icon="add-circle-outline" onPress={() => navigation.navigate('CreateReceipt')} style={{ marginTop: spacing.lg }} />
+      <Button title={t('New receipt')} icon="add-circle-outline" onPress={() => navigation.navigate('CreateReceipt')} style={{ marginTop: spacing.lg }} />
 
-      <SectionHeader title="Still owed" />
+      <SectionHeader title={t('Still owed')} />
       {data.outstanding.length === 0 ? (
         <Card>
           <View style={styles.inline}>
             <Ionicons name="checkmark-circle-outline" size={22} color={colors.success} />
             <Text variant="body" style={{ flex: 1 }}>
-              Nothing is owed. Every receipt is settled.
+              {t('Nothing is owed. Every receipt is settled.')}
             </Text>
           </View>
         </Card>
@@ -218,13 +228,13 @@ export default function AdminHome() {
           {data.outstanding.map((o, i) => (
             <View key={o.currency}>
               {i > 0 ? <Divider /> : null}
-              <View style={styles.owedRow} accessible accessibilityLabel={`${formatMoney(o.amount, o.currency)} still owed by ${plural(o.apartments, 'apartment')}, across ${plural(o.receipts, 'receipt')}`}>
+              <View style={styles.owedRow} accessible accessibilityLabel={t('{amount} still owed by {apartments}, across {receipts}', { amount: formatMoney(o.amount, o.currency), apartments: tn('{n} apartment|{n} apartments', o.apartments), receipts: tn('{n} receipt|{n} receipts', o.receipts) })}>
                 <View style={{ flex: 1 }}>
                   <Text numeral variant="title" style={{ fontSize: 24, lineHeight: 30 }} importantForAccessibility="no">
                     {formatMoney(o.amount, o.currency)}
                   </Text>
                   <Text variant="caption" color={colors.textMuted} importantForAccessibility="no">
-                    {plural(o.apartments, 'apartment')} · {plural(o.receipts, 'receipt')} unpaid, in {currencyLabel(o.currency) === 'USD' ? 'dollars' : 'lira'}
+                    {t('{apartments} · {receipts} unpaid, in {currency}', { apartments: tn('{n} apartment|{n} apartments', o.apartments), receipts: tn('{n} receipt|{n} receipts', o.receipts), currency: currencyLabel(o.currency) === 'USD' ? t('dollars') : t('lira') })}
                   </Text>
                 </View>
               </View>
@@ -233,29 +243,29 @@ export default function AdminHome() {
         </Card>
       )}
 
-      <SectionHeader title="Needs attention" />
+      <SectionHeader title={t('Needs attention')} />
       {data.needsAttention.length === 0 ? (
         <Card>
           <View style={styles.inline}>
             <Ionicons name="checkmark-circle-outline" size={22} color={colors.success} />
             <Text variant="body" style={{ flex: 1 }}>
-              Nobody is late. Residents are paying within {data.lateAfterDays} days of the receipt date.
+              {t('Nobody is late. Residents are paying within {days} of the receipt date.', { days: tn('{n} day|{n} days', data.lateAfterDays) })}
             </Text>
           </View>
         </Card>
       ) : (
         <Card flush>
           {data.needsAttention.map((a, i) => {
-            const owed = a.owed.map((o) => formatMoney(o.amount, o.currency)).join(' and ');
+            const owed = a.owed.map((o) => formatMoney(o.amount, o.currency)).join(` ${t('and')} `);
             return (
               <View key={a.apartmentId}>
                 {i > 0 ? <Divider inset={spacing.lg + 44 + spacing.md} /> : null}
                 <PersonRow
                   number={a.apartmentNumber}
-                  title={a.residentName || `Apartment ${a.apartmentNumber}`}
+                  title={a.residentName || t('Apartment {number}', { number: a.apartmentNumber })}
                   subtitle={reasonFor(a, data.lateAfterDays)}
                   right={owed ? <Text numeral variant="bodyStrong">{owed}</Text> : undefined}
-                  label={`Apartment ${a.apartmentNumber}, ${a.residentName || 'unnamed resident'}. ${reasonFor(a, data.lateAfterDays)}${owed ? `. Owes ${owed}` : ''}. Opens their receipts`}
+                  label={`${t('Apartment {number}, {name}.', { number: a.apartmentNumber, name: a.residentName || t('unnamed resident') })} ${reasonFor(a, data.lateAfterDays)}${owed ? `. ${t('Owes {amount}', { amount: owed })}` : ''}. ${t('Opens their receipts')}`}
                   onPress={() => navigation.navigate('ApartmentReceipts', { id: a.apartmentId, appartmentNumber: a.apartmentNumber })}
                 />
               </View>
@@ -266,17 +276,17 @@ export default function AdminHome() {
 
       {data.recentPayments.length > 0 ? (
         <>
-          <SectionHeader title="Recent payments" />
+          <SectionHeader title={t('Recent payments')} />
           <Card flush>
             {data.recentPayments.map((p, i) => (
               <View key={`${p.apartmentNumber}-${p.paidAt}-${i}`}>
                 {i > 0 ? <Divider inset={spacing.lg + 44 + spacing.md} /> : null}
                 <PersonRow
                   number={p.apartmentNumber}
-                  title={p.residentName || `Apartment ${p.apartmentNumber}`}
-                  subtitle={`Paid ${formatDate(parseDate(p.paidAt))} · receipt of ${formatDate(fromYmd(p.receiptDate))}`}
+                  title={p.residentName || t('Apartment {number}', { number: p.apartmentNumber })}
+                  subtitle={t('Paid {date} · receipt of {receiptDate}', { date: formatDate(parseDate(p.paidAt)), receiptDate: formatDate(fromYmd(p.receiptDate)) })}
                   right={<Text numeral variant="bodyStrong">{formatMoney(p.amount, p.currency)}</Text>}
-                  label={`Apartment ${p.apartmentNumber}, ${p.residentName || 'unnamed resident'} paid ${formatMoney(p.amount, p.currency)} on ${formatDate(parseDate(p.paidAt))}`}
+                  label={t('Apartment {number}, {name} paid {amount} on {date}', { number: p.apartmentNumber, name: p.residentName || t('unnamed resident'), amount: formatMoney(p.amount, p.currency), date: formatDate(parseDate(p.paidAt)) })}
                 />
               </View>
             ))}
@@ -284,14 +294,14 @@ export default function AdminHome() {
         </>
       ) : null}
 
-      <SectionHeader title="Receipts you issued" />
+      <SectionHeader title={t('Receipts you issued')} />
       <Card flush>
         {data.receipts.map((r, i) => (
           <View key={r.id}>
             {i > 0 ? <Divider /> : null}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Receipt of ${formatDate(fromYmd(r.date))}, ${formatMoney(r.total, r.currency)} each, ${r.paidCount} of ${r.count} paid. Opens collection`}
+              accessibilityLabel={t('Receipt of {date}, {amount} each, {paid} of {count} paid. Opens collection', { date: formatDate(fromYmd(r.date)), amount: formatMoney(r.total, r.currency), paid: r.paidCount, count: r.count })}
               onPress={() => openCollect(r.id)}
               style={({ pressed }) => pressed && { backgroundColor: colors.primaryTint }}
             >
@@ -299,7 +309,7 @@ export default function AdminHome() {
                 <View style={{ flex: 1 }}>
                   <Text variant="bodyStrong">{formatDate(fromYmd(r.date))}</Text>
                   <Text numeral variant="caption" color={colors.textMuted}>
-                    {formatMoney(r.total, r.currency)} each · {r.paidCount} of {r.count} paid
+                    {t('{amount} each · {paid} of {count} paid', { amount: formatMoney(r.total, r.currency), paid: r.paidCount, count: r.count })}
                   </Text>
                   <ProgressBar share={r.count > 0 ? r.paidCount / r.count : 0} thin />
                 </View>
@@ -317,8 +327,10 @@ export default function AdminHome() {
 
 function subtitleFor(data: Overview | null): string | undefined {
   if (!data || !data.hasBuilding) return undefined;
-  const apartments = plural(data.apartmentCount, 'apartment');
-  return data.pendingRequests > 0 ? `${apartments} · ${plural(data.pendingRequests, 'join request')} waiting` : apartments;
+  const apartments = tn('{n} apartment|{n} apartments', data.apartmentCount);
+  return data.pendingRequests > 0
+    ? t('{apartments} · {requests} waiting', { apartments, requests: tn('{n} join request|{n} join requests', data.pendingRequests) })
+    : apartments;
 }
 
 /** The part paid, in the Paid green. The words next to it carry the meaning; the bar is only the picture. */
@@ -383,14 +395,14 @@ function YourApartment({ data, onPress }: { data: NonNullable<ReturnType<typeof 
   const owed = totalsByCurrency(unpaid);
   const summary =
     owed.length > 0
-      ? `You owe ${owed.map((o) => formatMoney(o.amount, o.currency)).join(' and ')}`
+      ? `${t('You owe')} ${owed.map((o) => formatMoney(o.amount, o.currency)).join(` ${t('and')} `)}`
       : data.items.length > 0
-        ? 'Nothing is due'
-        : 'No receipts for your apartment yet';
+        ? t('Nothing is due')
+        : t('No receipts for your apartment yet');
   return (
     <View style={{ marginTop: spacing.xl }}>
-      <SectionHeader title="Your apartment" />
-      <Card flush onPress={onPress} accessibilityLabel={`Your apartment ${apartment.appartmentNumber}. ${summary}. Opens your receipts`}>
+      <SectionHeader title={t('Your apartment')} />
+      <Card flush onPress={onPress} accessibilityLabel={t('Your apartment {number}. {summary}. Opens your receipts', { number: apartment.appartmentNumber ?? '', summary })}>
         <View style={styles.personRow}>
           <DoorPlate number={String(apartment.appartmentNumber ?? '')} size="sm" />
           <View style={{ flex: 1 }}>

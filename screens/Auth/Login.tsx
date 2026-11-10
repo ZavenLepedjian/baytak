@@ -3,11 +3,12 @@ import { ImageBackground, Keyboard, Linking, ScrollView, StyleSheet, TouchableWi
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiRequest } from '../../api/client';
-import { Button, ConfirmDialog, FocusedStatusBar, KeyboardSafe, Text, TextField, showMessage } from '../../components/ui';
+import { Button, ConfirmDialog, FocusedStatusBar, KeyboardSafe, Text, TextField, fillNodes, showMessage } from '../../components/ui';
 import { PRIVACY_POLICY_URL, TERMS_URL } from '../../config';
 import { useLocation } from '../../location/LocationProvider';
 import type { ScreenProps } from '../../navigation/types';
 import { colors, radius, spacing } from '../../theme';
+import { t } from '../../i18n';
 
 export default function LoginScreen({ navigation }: ScreenProps<'Login'>) {
   const insets = useSafeAreaInsets();
@@ -18,12 +19,12 @@ export default function LoginScreen({ navigation }: ScreenProps<'Login'>) {
   const [confirmAdmin, setConfirmAdmin] = useState(false);
 
   const openPage = (url: string) =>
-    Linking.openURL(url).catch(() => showMessage({ message: 'Unable to open the page', type: 'danger' }));
+    Linking.openURL(url).catch(() => showMessage({ message: t('Unable to open the page'), type: 'danger' }));
 
   const requestCode = async (requestAdmin: '' | 'request-admin') => {
     const phone = phoneNumber.trim();
     if (!phone) {
-      setError('Please enter your phone number');
+      setError(t('Please enter your phone number'));
       return;
     }
     setError(null);
@@ -46,7 +47,7 @@ export default function LoginScreen({ navigation }: ScreenProps<'Login'>) {
 
     if (!res.ok) {
       if (!res.aborted) {
-        const message = res.status === 400 ? 'Please enter a valid phone number' : res.error;
+        const message = res.status === 400 ? t('Please enter a valid phone number') : res.error;
         setError(message);
         showMessage({ message, type: 'danger' });
       }
@@ -72,21 +73,21 @@ export default function LoginScreen({ navigation }: ScreenProps<'Login'>) {
                 Baytak
               </Text>
               <Text variant="body" color={colors.onInkMuted} style={{ marginTop: spacing.xs }}>
-                Building fees, made clear.
+                {t('Building fees, made clear.')}
               </Text>
             </View>
           </TouchableWithoutFeedback>
 
           <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.xl }]}>
-            <Text variant="title">Welcome</Text>
+            <Text variant="title">{t('Welcome')}</Text>
             <Text variant="body" color={colors.textMuted} style={{ marginTop: spacing.xs, marginBottom: spacing.xl }}>
-              Enter your phone number and we&apos;ll text you a verification code.
+              {t("Enter your phone number and we'll text you a verification code.")}
             </Text>
 
             <TextField
-              label="Phone number"
+              label={t('Phone number')}
               icon="call-outline"
-              placeholder="e.g. 03 123 456"
+              placeholder={t('e.g. 03 123 456')}
               keyboardType="phone-pad"
               textContentType="telephoneNumber"
               autoComplete="tel"
@@ -100,10 +101,10 @@ export default function LoginScreen({ navigation }: ScreenProps<'Login'>) {
               error={error}
             />
 
-            <Button title="Continue" loading={busy === 'login'} disabled={busy === 'admin'} onPress={() => requestCode('')} style={{ marginTop: spacing.xl }} />
+            <Button title={t('Continue')} loading={busy === 'login'} disabled={busy === 'admin'} onPress={() => requestCode('')} style={{ marginTop: spacing.xl }} />
 
             <Button
-              title="Managing a building? Request admin access"
+              title={t('Managing a building? Request admin access')}
               variant="ghost"
               small
               disabled={busy !== null}
@@ -112,22 +113,25 @@ export default function LoginScreen({ navigation }: ScreenProps<'Login'>) {
             />
 
             <Text variant="caption" color={colors.textMuted} align="center" style={{ marginTop: spacing.lg }}>
-              By continuing you accept our{' '}
-              <Text variant="caption" color={colors.primary} accessibilityRole="link" onPress={() => openPage(TERMS_URL)}>
-                Terms
-              </Text>{' '}
-              and{' '}
-              <Text variant="caption" color={colors.primary} accessibilityRole="link" onPress={() => openPage(PRIVACY_POLICY_URL)}>
-                Privacy Policy
-              </Text>
-              .
+              {fillNodes(t('By continuing you accept our {terms} and {privacy}.'), {
+                terms: (
+                  <Text variant="caption" color={colors.primary} accessibilityRole="link" onPress={() => openPage(TERMS_URL)}>
+                    {t('Terms')}
+                  </Text>
+                ),
+                privacy: (
+                  <Text variant="caption" color={colors.primary} accessibilityRole="link" onPress={() => openPage(PRIVACY_POLICY_URL)}>
+                    {t('Privacy Policy')}
+                  </Text>
+                ),
+              })}
             </Text>
 
             <ConfirmDialog
               visible={confirmAdmin}
-              title="Request administrator access?"
-              message="We will text you a code. After you verify it, our team reviews your request before the building tools are switched on. Until then you can use Baytak as a resident."
-              confirmTitle="Send code"
+              title={t('Request administrator access?')}
+              message={t('We will text you a code. After you verify it, our team reviews your request before the building tools are switched on. Until then you can use Baytak as a resident.')}
+              confirmTitle={t('Send code')}
               loading={busy === 'admin'}
               onCancel={() => setConfirmAdmin(false)}
               onConfirm={() => {

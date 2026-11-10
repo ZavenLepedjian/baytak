@@ -3,9 +3,10 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { apiRequest } from '../../api/client';
 import { useAuth } from '../../auth/AuthProvider';
-import { Button, CodeInput, Screen, Text, chevronBack, showMessage } from '../../components/ui';
+import { Button, CodeInput, Screen, Text, chevronBack, fillNodes, showMessage } from '../../components/ui';
 import type { ScreenProps } from '../../navigation/types';
 import { colors, HIT, radius, spacing } from '../../theme';
+import { t, ltr } from '../../i18n';
 
 const CELL_COUNT = 6;
 const RESEND_SECONDS = 30;
@@ -24,15 +25,15 @@ export default function LoginVerification({ navigation, route }: ScreenProps<'Lo
 
   useEffect(() => {
     if (cooldown <= 0) return;
-    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
   }, [cooldown]);
 
   const verify = useCallback(
     async (code: string) => {
       if (submitting.current) return;
       if (code.length < CELL_COUNT) {
-        setError('Enter the 6-digit code');
+        setError(t('Enter the 6-digit code'));
         return;
       }
       submitting.current = true;
@@ -49,7 +50,7 @@ export default function LoginVerification({ navigation, route }: ScreenProps<'Lo
         submitting.current = false;
         setVerifying(false);
         if (!res.aborted) {
-          setError(res.status === 400 ? 'That code is not correct. Please try again.' : res.error);
+          setError(res.status === 400 ? t('That code is not correct. Please try again.') : res.error);
           setValue('');
         }
         return;
@@ -58,7 +59,7 @@ export default function LoginVerification({ navigation, route }: ScreenProps<'Lo
       if (!token) {
         submitting.current = false;
         setVerifying(false);
-        setError('We could not sign you in. Please try again.');
+        setError(t('We could not sign you in. Please try again.'));
         setValue('');
         return;
       }
@@ -79,7 +80,7 @@ export default function LoginVerification({ navigation, route }: ScreenProps<'Lo
     setResending(false);
     if (res.ok) {
       setCooldown(RESEND_SECONDS);
-      showMessage({ message: 'A new code is on its way', type: 'success' });
+      showMessage({ message: t('A new code is on its way'), type: 'success' });
     } else if (!res.aborted) {
       showMessage({ message: res.error, type: 'danger' });
     }
@@ -87,10 +88,10 @@ export default function LoginVerification({ navigation, route }: ScreenProps<'Lo
 
   return (
     <Screen contentStyle={{ paddingTop: spacing.xl }}>
-      <Pressable onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Change number" hitSlop={12} style={styles.back}>
+      <Pressable onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel={t('Change number')} hitSlop={12} style={styles.back}>
         <Ionicons name={chevronBack} size={24} color={colors.primary} />
         <Text variant="bodyStrong" color={colors.primary}>
-          Change number
+          {t('Change number')}
         </Text>
       </Pressable>
 
@@ -98,10 +99,10 @@ export default function LoginVerification({ navigation, route }: ScreenProps<'Lo
         <Ionicons name="chatbubble-ellipses-outline" size={34} color={colors.primary} />
       </View>
       <Text variant="title" style={{ marginTop: spacing.lg }}>
-        Enter verification code
+        {t('Enter verification code')}
       </Text>
       <Text variant="body" color={colors.textMuted} style={{ marginTop: spacing.xs + 2, marginBottom: spacing.xl }}>
-        We sent a 6-digit code to <Text variant="bodyStrong">{phoneNumber}</Text>.
+        {fillNodes(t('We sent a 6-digit code to {phone}.'), { phone: <Text variant="bodyStrong">{ltr(phoneNumber)}</Text> })}
       </Text>
 
       <CodeInput
@@ -119,16 +120,16 @@ export default function LoginVerification({ navigation, route }: ScreenProps<'Lo
         </Text>
       ) : null}
 
-      <Button title="Verify" loading={verifying} disabled={value.length < CELL_COUNT} onPress={() => verify(value)} style={{ marginTop: spacing.xl }} />
+      <Button title={t('Verify')} loading={verifying} disabled={value.length < CELL_COUNT} onPress={() => verify(value)} style={{ marginTop: spacing.xl }} />
 
       <View style={styles.resendRow}>
         <Text variant="body" color={colors.textMuted}>
-          Didn&apos;t get a code?
+          {t("Didn't get a code?")}
         </Text>
         <Button
           small
           variant="ghost"
-          title={cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend code'}
+          title={cooldown > 0 ? t('Resend in {n}s', { n: cooldown }) : t('Resend code')}
           disabled={cooldown > 0 || verifying}
           loading={resending}
           onPress={resend}

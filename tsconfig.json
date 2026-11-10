@@ -3,6 +3,8 @@
   "compilerOptions": {
     // "types": ["react", "react-dom", "react-native"],
     "jsx": "react-native",
-    "strict": true
+    "strict": true,
+    // Pure helpers import each other with the .ts ending so the plain-Node unit tests can load them too.
+    "allowImportingTsExtensions": true
   }
 }

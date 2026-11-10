@@ -11,6 +11,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { API_BASE_URL, API_KEY } from '../config';
 import { colors, HIT, radius, spacing } from '../theme';
 import { Button, Text, showMessage } from './ui';
+import { t } from '../i18n';
 
 export const MAX_RECEIPT_PHOTOS = 5;
 /** The longest edge of an uploaded photo. A bill stays readable and the file stays around 300 KB. */
@@ -76,7 +77,7 @@ export function usePhotoUploads(max = MAX_RECEIPT_PHOTOS) {
     if (listRef.current.length >= max) return;
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      showMessage({ message: 'Allow camera access in your phone settings to take a photo', type: 'warning' });
+      showMessage({ message: t('Allow camera access in your phone settings to take a photo'), type: 'warning' });
       return;
     }
     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 1, exif: false });
@@ -137,7 +138,7 @@ export function PhotoPicker({ uploads }: { uploads: PhotoUploads }) {
             <View key={p.key} style={styles.thumbBox}>
               <Image source={{ uri: p.uri }} style={styles.thumb} accessibilityIgnoresInvertColors />
               {p.status === 'uploading' ? (
-                <View style={styles.cover} accessible accessibilityLabel={`Photo ${i + 1}, uploading`}>
+                <View style={styles.cover} accessible accessibilityLabel={t('Photo {n}, uploading', { n: i + 1 })}>
                   <ActivityIndicator color={colors.onInk} />
                 </View>
               ) : null}
@@ -145,12 +146,12 @@ export function PhotoPicker({ uploads }: { uploads: PhotoUploads }) {
                 <Pressable
                   style={[styles.cover, styles.coverFailed]}
                   accessibilityRole="button"
-                  accessibilityLabel={`Photo ${i + 1} did not upload. Try again`}
+                  accessibilityLabel={t('Photo {n} did not upload. Try again', { n: i + 1 })}
                   onPress={() => uploads.retry(p.key)}
                 >
                   <Ionicons name="refresh" size={22} color={colors.onInk} />
                   <Text variant="label" color={colors.onInk}>
-                    Retry
+                    {t('Retry')}
                   </Text>
                 </Pressable>
               ) : null}
@@ -158,7 +159,7 @@ export function PhotoPicker({ uploads }: { uploads: PhotoUploads }) {
                 style={styles.remove}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel={`Remove photo ${i + 1}`}
+                accessibilityLabel={t('Remove photo {n}', { n: i + 1 })}
                 onPress={() => uploads.remove(p.key)}
               >
                 <Ionicons name="close-circle" size={24} color={colors.text} />
@@ -168,8 +169,8 @@ export function PhotoPicker({ uploads }: { uploads: PhotoUploads }) {
         </View>
       ) : null}
       <View style={styles.buttons}>
-        <Button small variant="secondary" icon="camera-outline" title="Take photo" disabled={full} onPress={uploads.takePhoto} style={{ flex: 1 }} />
-        <Button small variant="secondary" icon="images-outline" title="Choose photos" disabled={full} onPress={uploads.choosePhotos} style={{ flex: 1 }} />
+        <Button small variant="secondary" icon="camera-outline" title={t('Take photo')} disabled={full} onPress={uploads.takePhoto} style={{ flex: 1 }} />
+        <Button small variant="secondary" icon="images-outline" title={t('Choose photos')} disabled={full} onPress={uploads.choosePhotos} style={{ flex: 1 }} />
       </View>
       <Text variant="caption" color={colors.textMuted} style={{ marginTop: spacing.sm }}>
         {photos.length} of {max} photos. Residents who receive this receipt can see them.
@@ -203,14 +204,14 @@ export function ReceiptPhotoStrip({ ids }: { ids: string[] }) {
   return (
     <View style={{ marginTop: spacing.md }}>
       <Text variant="label" color={colors.textMuted}>
-        PHOTOS OF THE BILL
+        {t('PHOTOS OF THE BILL')}
       </Text>
       <View style={[styles.strip, { marginTop: spacing.sm }]}>
         {ids.map((id, i) => (
           <Pressable
             key={id}
             accessibilityRole="imagebutton"
-            accessibilityLabel={`Photo ${i + 1} of ${ids.length}. Opens full screen`}
+            accessibilityLabel={t('Photo {n} of {total}. Opens full screen', { n: i + 1, total: ids.length })}
             onPress={() => setOpen(i)}
           >
             <AuthedImage id={id} style={styles.thumb} />
@@ -251,7 +252,7 @@ function PhotoViewer({ ids, start, onClose }: { ids: string[]; start: number | n
           <Text variant="bodyStrong" color={colors.onInk} accessibilityLiveRegion="polite">
             {current + 1} of {ids.length}
           </Text>
-          <Pressable style={styles.close} accessibilityRole="button" accessibilityLabel="Close photos" onPress={onClose} hitSlop={8}>
+          <Pressable style={styles.close} accessibilityRole="button" accessibilityLabel={t('Close photos')} onPress={onClose} hitSlop={8}>
             <Ionicons name="close" size={28} color={colors.onInk} />
           </Pressable>
         </View>

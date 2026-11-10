@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../auth/AuthProvider';
 import { Button, Card, Text, showMessage } from '../../components/ui';
 import { colors, radius, spacing } from '../../theme';
+import { t } from '../../i18n';
 
 /** Shown to administrator accounts until their request has been approved. */
 export default function AdminPending() {
@@ -17,9 +18,9 @@ export default function AdminPending() {
     const status = await refreshUserStatus();
     setChecking(false);
     if (status === null) {
-      showMessage({ message: "Could not check your status. Please try again.", type: "danger" });
+      showMessage({ message: t('Could not check your status. Please try again.'), type: "danger" });
     } else if (status !== "Approved") {
-      showMessage({ message: "Your request is still being reviewed.", type: "info" });
+      showMessage({ message: t('Your request is still being reviewed.'), type: "info" });
     }
   };
 
@@ -29,25 +30,25 @@ export default function AdminPending() {
         <Ionicons name={userStatus === 'Rejected' ? 'close-circle-outline' : 'hourglass-outline'} size={40} color={userStatus === 'Rejected' ? colors.danger : colors.warning} />
       </View>
       <Text variant="title" align="center" style={{ marginTop: spacing.xl }}>
-        {userStatus === 'Rejected' ? 'Request not approved' : 'Request received'}
+        {userStatus === 'Rejected' ? t('Request not approved') : t('Request received')}
       </Text>
       <Text variant="body" color={colors.textMuted} align="center" style={{ marginTop: spacing.sm }}>
         {userStatus === 'Rejected'
-          ? 'Your administrator request was not approved. Please contact support if you think this is a mistake.'
-          : 'Your administrator access is being reviewed.'}
+          ? t('Your administrator request was not approved. Please contact support if you think this is a mistake.')
+          : t('Your administrator access is being reviewed.')}
       </Text>
 
       <Card style={{ marginTop: spacing.xl, alignSelf: 'stretch' }}>
         <Text variant="body">
           {userStatus === 'Rejected'
-            ? 'You can still sign out and use Baytak as a resident with another number.'
-            : 'You will be able to manage your building as soon as the request is approved. Tap Check status to see where it stands.'}
+            ? t('You can still sign out and use Baytak as a resident with another number.')
+            : t('You will be able to manage your building as soon as the request is approved. Tap Check status to see where it stands.')}
         </Text>
       </Card>
 
       <View style={styles.actions}>
-        <Button title="Check status" icon="refresh" loading={checking} onPress={check} />
-        <Button title="Sign out" variant="ghost" onPress={() => void signOut()} />
+        <Button title={t('Check status')} icon="refresh" loading={checking} onPress={check} />
+        <Button title={t('Sign out')} variant="ghost" onPress={() => void signOut()} />
       </View>
     </View>
   );

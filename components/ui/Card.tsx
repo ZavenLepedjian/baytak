@@ -3,6 +3,7 @@ import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import { colors, radius, shadow, spacing } from '../../theme';
 import { Text } from './Text';
 import { initials } from '../../functions/format';
+import { t } from '../../i18n';
 
 type CardProps = {
   children: React.ReactNode;
@@ -42,10 +43,10 @@ const tones: Record<Tone, { bg: string; fg: string }> = {
 };
 
 export function Badge({ label, tone = 'neutral' }: { label: string; tone?: Tone }) {
-  const t = tones[tone];
+  const look = tones[tone];
   return (
-    <View style={[styles.badge, { backgroundColor: t.bg, borderColor: t.fg }]}>
-      <Text variant="label" color={t.fg}>
+    <View style={[styles.badge, { backgroundColor: look.bg, borderColor: look.fg }]}>
+      <Text variant="label" color={look.fg}>
         {label}
       </Text>
     </View>
@@ -64,6 +65,24 @@ export function statusTone(status: string | null | undefined): Tone {
       return 'danger';
     default:
       return 'neutral';
+  }
+}
+
+/** The status words the server sends (Paid, Pending, ...) in the reader's language. */
+export function statusLabel(status: string | null | undefined): string {
+  switch ((status ?? '').toLowerCase()) {
+    case 'paid':
+      return t('Paid');
+    case 'unpaid':
+      return t('Unpaid');
+    case 'approved':
+      return t('Approved');
+    case 'pending':
+      return t('Pending');
+    case 'rejected':
+      return t('Rejected');
+    default:
+      return status ?? '';
   }
 }
 

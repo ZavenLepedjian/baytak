@@ -5,14 +5,15 @@ import { ordinalFloor } from '../functions/format';
 import { useFetch } from '../hooks/useFetch';
 import { colors, spacing } from '../theme';
 import { ReceiptBreakdown, ReceiptRow, selectReceipts } from './Dashboard';
+import { t } from '../i18n';
 
 type Sort = 'newest' | 'oldest' | 'highest' | 'lowest';
 
 const sortOptions: { value: Sort; label: string }[] = [
-  { value: 'newest', label: 'Newest' },
-  { value: 'oldest', label: 'Oldest' },
-  { value: 'highest', label: 'Highest' },
-  { value: 'lowest', label: 'Lowest' },
+  { value: 'newest', label: t('Newest') },
+  { value: 'oldest', label: t('Oldest') },
+  { value: 'highest', label: t('Highest') },
+  { value: 'lowest', label: t('Lowest') },
 ];
 
 export default function Receipts() {
@@ -58,7 +59,7 @@ export default function Receipts() {
       {apartment ? (
         <Card style={{ marginBottom: spacing.lg }}>
           <Text variant="heading">
-            {ordinalFloor(apartment.floor)} · Apartment {apartment.appartmentNumber}
+            {ordinalFloor(apartment.floor)} · {t('Apartment {number}', { number: apartment.appartmentNumber ?? '' })}
           </Text>
           {apartment.appartmentDescription ? (
             <Text variant="body" color={colors.textMuted} style={{ marginTop: 2 }}>
@@ -69,7 +70,7 @@ export default function Receipts() {
       ) : null}
 
       {items.length === 0 ? (
-        <EmptyState icon="receipt-outline" title="No receipts yet" message="There are no receipts posted for your apartment. Pull down to refresh." />
+        <EmptyState icon="receipt-outline" title={t('No receipts yet')} message={t('There are no receipts posted for your apartment. Pull down to refresh.')} />
       ) : (
         <>
           <Segmented options={sortOptions} value={sort} onChange={setSort} />

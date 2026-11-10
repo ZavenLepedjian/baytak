@@ -18,6 +18,8 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
 ) {
   const [focused, setFocused] = useState(false);
   const borderColor = error ? colors.danger : focused ? colors.primary : colors.borderInput;
+  // Phone numbers, amounts and e-mail addresses read left to right, even in an Arabic layout.
+  const leftToRight = ['phone-pad', 'number-pad', 'decimal-pad', 'numeric', 'email-address'].includes(String(rest.keyboardType));
 
   return (
     <View style={containerStyle}>
@@ -50,7 +52,7 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
             setFocused(false);
             onBlur?.(e);
           }}
-          style={[styles.input, multiline && styles.inputMultiline, !editable && { color: colors.textMuted }]}
+          style={[styles.input, multiline && styles.inputMultiline, !editable && { color: colors.textMuted }, leftToRight && styles.leftToRight]}
           {...rest}
         />
       </View>
@@ -81,5 +83,6 @@ const styles = StyleSheet.create({
   icon: { marginEnd: spacing.sm },
   input: { flex: 1, fontFamily: family.regular, fontSize: 16, color: colors.text, paddingVertical: 12 },
   inputMultiline: { minHeight: 96, textAlignVertical: 'top' },
+  leftToRight: { textAlign: 'left', writingDirection: 'ltr' },
   hint: { marginTop: spacing.xs + 2 },
 });

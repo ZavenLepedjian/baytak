@@ -1,7 +1,7 @@
-export { Text } from './Text';
+export { Text, fillNodes } from './Text';
 export { Button } from './Button';
 export { TextField } from './TextField';
-export { Card, Badge, Avatar, SectionHeader, Divider, statusTone } from './Card';
+export { Card, Badge, Avatar, SectionHeader, Divider, statusLabel, statusTone } from './Card';
 export { Screen, Hero, FocusedStatusBar } from './Screen';
 export { Loading, EmptyState, ErrorState, Skeleton, ListSkeleton } from './States';
 export { Sheet, ConfirmDialog } from './Sheet';

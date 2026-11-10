@@ -24,6 +24,7 @@ import { currencyLabel, formatAmount, formatDate, formatMoney, ordinalFloor, par
 import { useFetch } from '../hooks/useFetch';
 import type { RootStackParamList } from '../navigation/types';
 import { colors, family, HIT, radius, spacing } from '../theme';
+import { t, tn } from '../i18n';
 
 export type ReceiptItem = {
   id?: number | string;
@@ -70,7 +71,13 @@ const fieldIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   cleaning: 'sparkles-outline',
   generator: 'battery-charging-outline',
 };
-export const iconForField = (name: string): keyof typeof Ionicons.glyphMap => fieldIcons[name.trim().toLowerCase()] ?? 'receipt-outline';
+// The same lines in the reader's language (the starter receipts name them in Arabic for an Arabic administrator).
+const localFieldIcons: Record<string, keyof typeof Ionicons.glyphMap> = {};
+for (const [english, icon] of Object.entries(fieldIcons)) localFieldIcons[t(english.charAt(0).toUpperCase() + english.slice(1)).toLowerCase()] = icon;
+export const iconForField = (name: string): keyof typeof Ionicons.glyphMap => {
+  const key = name.trim().toLowerCase();
+  return fieldIcons[key] ?? localFieldIcons[key] ?? 'receipt-outline';
+};
 
 /** What is owed, per currency. Currencies are never added together. */
 export function totalsByCurrency(unpaid: ReceiptItem[]): { currency: 'USD' | 'LBP'; amount: number }[] {
@@ -110,7 +117,7 @@ export default function Dashboard() {
           <DoorPlate number={String(apartment.appartmentNumber ?? '')} size="lg" tone="paper" />
           <View style={{ flex: 1 }}>
             <Text variant="heading" color={colors.onInk} numberOfLines={1}>
-              {mine.data?.buildingName || 'Your building'}
+              {mine.data?.buildingName || t('Your building')}
             </Text>
             <Text variant="caption" color={colors.onInkMuted}>
               {ordinalFloor(apartment.floor)}
@@ -148,25 +155,25 @@ export default function Dashboard() {
         {status === 'Pending' ? (
           <EmptyState
             icon="hourglass-outline"
-            title="Waiting for approval"
-            message={`The administrator of ${mine.data?.buildingName || 'your building'} is reviewing apartment ${mine.data?.appartmentNumber}. We will notify you when it is approved.`}
-            actionTitle="View my request"
+            title={t('Waiting for approval')}
+            message={t('The administrator of {building} is reviewing apartment {number}. We will notify you when it is approved.', { building: mine.data?.buildingName || t('your building'), number: mine.data?.appartmentNumber ?? '' })}
+            actionTitle={t('View my request')}
             onAction={() => navigation.navigate('JoinBuilding')}
           />
         ) : status === 'Rejected' ? (
           <EmptyState
             icon="close-circle-outline"
-            title="Your request was not approved"
-            message="You can correct the details and send it again."
-            actionTitle="Update my request"
+            title={t('Your request was not approved')}
+            message={t('You can correct the details and send it again.')}
+            actionTitle={t('Update my request')}
             onAction={() => navigation.navigate('JoinBuilding')}
           />
         ) : (
           <EmptyState
             icon="home-outline"
-            title="Register your apartment"
-            message="Join your building to see what you owe and your receipts."
-            actionTitle="Join a building"
+            title={t('Register your apartment')}
+            message={t('Join your building to see what you owe and your receipts.')}
+            actionTitle={t('Join a building')}
             onAction={() => navigation.navigate('JoinBuilding')}
           />
         )}
@@ -191,7 +198,7 @@ export default function Dashboard() {
 
       {unpaid.length > MAX_SLIPS ? (
         <Button
-          title={`See all ${unpaid.length} unpaid receipts`}
+          title={tn('See all {n} unpaid receipt|See all {n} unpaid receipts', unpaid.length)}
           variant="secondary"
           onPress={() => navigation.navigate('Receipts')}
           style={{ marginTop: spacing.md }}
@@ -201,7 +208,7 @@ export default function Dashboard() {
       {paid.length > 0 ? (
         <View style={{ marginTop: spacing.xl }}>
           <Text variant="heading" style={{ marginBottom: spacing.sm }}>
-            Paid recently
+            {t('Paid recently')}
           </Text>
           <Card flush>
             {paid.slice(0, 3).map((item, i) => (
@@ -213,12 +220,12 @@ export default function Dashboard() {
           </Card>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="See all receipts"
+            accessibilityLabel={t('See all receipts')}
             onPress={() => navigation.navigate('Receipts')}
             style={styles.link}
           >
             <Text variant="bodyStrong" color={colors.primary}>
-              See all receipts
+              {t('See all receipts')}
             </Text>
             <Ionicons name={chevronForward} size={16} color={colors.primary} />
           </Pressable>
@@ -242,22 +249,22 @@ function Verdict({
 }) {
   if (owed.length === 0) {
     return (
-      <View accessible accessibilityRole="header" accessibilityLabel={hasReceipts ? "You're all paid up" : 'No receipts yet'}>
+      <View accessible accessibilityRole="header" accessibilityLabel={hasReceipts ? t("You're all paid up") : t('No receipts yet')}>
         <Text variant="display" style={{ fontSize: 32, lineHeight: 40 }} importantForAccessibility="no">
-          {hasReceipts ? "You're all paid up" : 'No receipts yet'}
+          {hasReceipts ? t("You're all paid up") : t('No receipts yet')}
         </Text>
         <Text variant="body" color={colors.textMuted} style={{ marginTop: spacing.xs }} importantForAccessibility="no">
           {hasReceipts
             ? lastPaidDate
-              ? `Nothing is due. Your last payment was recorded on ${formatDate(lastPaidDate)}.`
-              : 'Nothing is due.'
-            : 'When your building administrator issues a receipt, it appears here and you get a notification.'}
+              ? t('Nothing is due. Your last payment was recorded on {date}.', { date: formatDate(lastPaidDate) })
+              : t('Nothing is due.')
+            : t('When your building administrator issues a receipt, it appears here and you get a notification.')}
         </Text>
       </View>
     );
   }
 
-  const spoken = `You owe ${owed.map((o) => formatMoney(o.amount, o.currency)).join(' and ')}, across ${unpaidCount} unpaid ${unpaidCount === 1 ? 'receipt' : 'receipts'}`;
+  const spoken = t('You owe {amounts}, across {receipts}', { amounts: owed.map((o) => formatMoney(o.amount, o.currency)).join(` ${t('and')} `), receipts: tn('{n} unpaid receipt|{n} unpaid receipts', unpaidCount) });
   return (
     <View accessible accessibilityRole="header" accessibilityLabel={spoken}>
       {owed.map((o, i) => (
@@ -268,7 +275,7 @@ function Verdict({
           importantForAccessibility="no"
           style={{ fontFamily: family.regular, fontSize: 30, lineHeight: 40, color: colors.textMuted }}
         >
-          {i === 0 ? 'You owe ' : 'and '}
+          {i === 0 ? `${t('You owe')} ` : `${t('and')} `}
           <Text numeral style={{ fontSize: 34, color: colors.text }}>
             {formatAmount(o.amount, o.currency)}
           </Text>
@@ -291,7 +298,7 @@ function Slip({ item, onPress }: { item: ReceiptItem; onPress: () => void }) {
     <Card
       flush
       onPress={onPress}
-      accessibilityLabel={`Receipt of ${formatDate(item.parsed.date)}, ${formatMoney(item.totalPayment, item.currency)}, ${state === 'paid' ? 'paid' : 'unpaid'}. Opens all receipts`}
+      accessibilityLabel={t('Receipt of {date}, {amount}, {state}. Opens all receipts', { date: formatDate(item.parsed.date), amount: formatMoney(item.totalPayment, item.currency), state: state === 'paid' ? t('paid') : t('unpaid') })}
     >
       <View style={styles.slipTop}>
         <Text variant="bodyStrong">{formatDate(item.parsed.date)}</Text>
@@ -311,7 +318,7 @@ function Slip({ item, onPress }: { item: ReceiptItem; onPress: () => void }) {
         ))}
         {hidden > 0 ? (
           <Text variant="caption" color={colors.textMuted}>
-            + {hidden} more {hidden === 1 ? 'line' : 'lines'}
+            {tn('+ {n} more line|+ {n} more lines', hidden)}
           </Text>
         ) : null}
         {note ? (
@@ -322,7 +329,7 @@ function Slip({ item, onPress }: { item: ReceiptItem; onPress: () => void }) {
       </View>
       <Divider />
       <View style={styles.slipTotal}>
-        <Text variant="bodyStrong">Total</Text>
+        <Text variant="bodyStrong">{t('Total')}</Text>
         <Text numeral variant="heading" style={{ fontSize: 20 }}>
           {formatMoney(item.totalPayment, item.currency)}
         </Text>
@@ -349,7 +356,7 @@ export function ReceiptRow({ item, onPress, expanded }: { item: ReceiptItem; onP
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Receipt of ${formatDate(item.parsed.date)}, ${formatMoney(item.totalPayment, item.currency)}, ${state === 'paid' ? 'paid' : 'unpaid'}`}
+      accessibilityLabel={t('Receipt of {date}, {amount}, {state}', { date: formatDate(item.parsed.date), amount: formatMoney(item.totalPayment, item.currency), state: state === 'paid' ? t('paid') : t('unpaid') })}
       accessibilityState={expanded === undefined ? undefined : { expanded }}
       onPress={onPress}
       style={({ pressed }) => pressed && { backgroundColor: colors.primaryTint }}

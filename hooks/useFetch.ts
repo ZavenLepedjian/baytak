@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { useApi } from '../api/useApi';
+import { t } from '../i18n';
 
 type Options<T> = {
   /** Skip fetching until true (e.g. waiting for a route param). */
@@ -53,7 +54,7 @@ export function useFetch<T = unknown>(path: string, options: Options<T> = {}) {
           hasData.current = true;
           setError(null);
         } catch {
-          setError('We could not read the server response. Please try again.');
+          setError(t('We could not read the server response. Please try again.'));
         }
       } else if (!res.aborted && !res.unauthorized) {
         setError(res.error);

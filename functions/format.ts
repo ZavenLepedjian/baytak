@@ -1,3 +1,5 @@
+import { isArabic, latinDigits, localeTag, ltr, t } from '../i18n';
+
 export function formatNumber(value: unknown): string {
   if (value === null || value === undefined || value === '') return '0';
   const num = Number(value);
@@ -21,7 +23,7 @@ export function formatAmount(value: unknown, currency?: unknown): string {
 }
 
 export function formatMoney(value: unknown, currency: unknown): string {
-  return `${formatAmount(value, currency)} ${currencyLabel(currency)}`;
+  return ltr(`${formatAmount(value, currency)} ${currencyLabel(currency)}`);
 }
 
 export function parseDate(value: unknown): Date | null {
@@ -44,12 +46,13 @@ export function fromYmd(value: string): Date {
 
 export function formatDate(value: unknown): string {
   const d = parseDate(value);
-  return d ? d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+  return d ? latinDigits(d.toLocaleDateString(localeTag(), { year: 'numeric', month: 'short', day: 'numeric' })) : '—';
 }
 
 export function ordinalFloor(floor: number | string | null | undefined): string {
   const n = Number(floor);
-  if (!Number.isFinite(n)) return 'Floor';
+  if (!Number.isFinite(n)) return t('Floor');
+  if (isArabic()) return t('Floor {n}', { n });
   const mod100 = n % 100;
   const mod10 = n % 10;
   const suffix = mod100 >= 11 && mod100 <= 13 ? 'th' : mod10 === 1 ? 'st' : mod10 === 2 ? 'nd' : mod10 === 3 ? 'rd' : 'th';

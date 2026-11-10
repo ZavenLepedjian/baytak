@@ -5,6 +5,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import { Button, Card, ErrorState, InfoBanner, ListSkeleton, Screen, TextField, showMessage } from '../../components/ui';
 import { useFetch } from '../../hooks/useFetch';
 import { spacing } from '../../theme';
+import { t } from '../../i18n';
 
 type UserProfile = {
   firstName: string;
@@ -40,8 +41,8 @@ export default function Profile() {
 
   const save = async () => {
     const next: typeof errors = {};
-    if (!form.firstName.trim()) next.firstName = 'First name is required';
-    if (!form.lastName.trim()) next.lastName = 'Last name is required';
+    if (!form.firstName.trim()) next.firstName = t('First name is required');
+    if (!form.lastName.trim()) next.lastName = t('Last name is required');
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -51,7 +52,7 @@ export default function Profile() {
     setSaving(false);
     if (res.ok) {
       setFullName(`${body.firstName} ${body.lastName}`);
-      showMessage({ message: typeof res.data === 'string' && res.data ? res.data : 'Profile saved', type: 'success' });
+      showMessage({ message: typeof res.data === 'string' && res.data ? res.data : t('Profile saved'), type: 'success' });
     }
   };
 
@@ -72,15 +73,15 @@ export default function Profile() {
 
   return (
     <Screen>
-      <InfoBanner icon="people-outline">Your name and an emergency contact help your building reach you when it matters.</InfoBanner>
+      <InfoBanner icon="people-outline">{t('Your name and an emergency contact help your building reach you when it matters.')}</InfoBanner>
 
       <Card>
         <View style={{ gap: spacing.lg }}>
-          <TextField label="Phone number" icon="call-outline" value={phoneNumber} editable={false} />
+          <TextField label={t('Phone number')} icon="call-outline" keyboardType="phone-pad" value={phoneNumber} editable={false} />
           <TextField
-            label="First name *"
+            label={t('First name *')}
             icon="person-outline"
-            placeholder="First name"
+            placeholder={t('First name')}
             value={form.firstName}
             autoCapitalize="words"
             textContentType="givenName"
@@ -88,9 +89,9 @@ export default function Profile() {
             error={errors.firstName}
           />
           <TextField
-            label="Last name *"
+            label={t('Last name *')}
             icon="person-outline"
-            placeholder="Last name"
+            placeholder={t('Last name')}
             value={form.lastName}
             autoCapitalize="words"
             textContentType="familyName"
@@ -103,17 +104,17 @@ export default function Profile() {
       <Card style={{ marginTop: spacing.lg }}>
         <View style={{ gap: spacing.lg }}>
           <TextField
-            label="Emergency contact name"
+            label={t('Emergency contact name')}
             icon="medkit-outline"
-            placeholder="Full name"
+            placeholder={t('Full name')}
             value={form.emergencyContactPersonFullName}
             autoCapitalize="words"
             onChangeText={(v) => update({ emergencyContactPersonFullName: v })}
           />
           <TextField
-            label="Emergency contact number"
+            label={t('Emergency contact number')}
             icon="call-outline"
-            placeholder="Phone number"
+            placeholder={t('Phone number')}
             keyboardType="phone-pad"
             value={form.emergencyContactPersonPhoneNumber}
             onChangeText={(v) => update({ emergencyContactPersonPhoneNumber: v })}
@@ -121,7 +122,7 @@ export default function Profile() {
         </View>
       </Card>
 
-      <Button title="Save changes" loading={saving} onPress={save} style={{ marginTop: spacing.xl }} />
+      <Button title={t('Save changes')} loading={saving} onPress={save} style={{ marginTop: spacing.xl }} />
     </Screen>
   );
 }

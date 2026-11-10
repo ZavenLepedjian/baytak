@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { apiRequest, ApiResult } from './client';
 import { useAuth } from '../auth/AuthProvider';
 import { showMessage } from '../components/ui/Toast';
+import { t } from '../i18n';
 
 type CallOptions = {
   /** Skip the error toast; the caller renders its own error state. */
@@ -29,7 +30,7 @@ export function useApi() {
       const res = await apiRequest<T>(path, { method, body, token, signal: opts.signal, contentType: opts.contentType, timeoutMs: opts.timeoutMs });
       if (!res.ok && !res.aborted) {
         if (res.unauthorized && token) {
-          showMessage({ message: 'Your session has expired. Please sign in again.', type: 'warning' });
+          showMessage({ message: t('Your session has expired. Please sign in again.'), type: 'warning' });
           void signOut({ remote: false });
         } else if (!opts.silent) {
           showMessage({ message: res.error, type: 'danger' });
