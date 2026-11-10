@@ -86,7 +86,7 @@ $status = Call GET "user/status" $null $adminJwt
 if ($status.userStatus -ne "Approved") { throw "The demo administrator is not approved." }
 
 $buildings = Call GET "buildings/get" $null $adminJwt
-$building = @($buildings | Where-Object { $_.label -like "Demo Residence*" -or $_.buildingName -like "Demo Residence*" }) | Select-Object -First 1
+$building = @($buildings | Where-Object { $_.label -match '^(Demo|Cedar) Residence' -or $_.buildingName -match '^(Demo|Cedar) Residence' }) | Select-Object -First 1
 if (-not $building) { throw "The demo building was not found; run setup-reviewer-demo.ps1 -Phase seed first." }
 $buildingId = if ($building.value) { $building.value } elseif ($building.id) { $building.id } else { @($buildings)[0].value }
 

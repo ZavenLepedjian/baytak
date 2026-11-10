@@ -140,6 +140,11 @@ public sealed class UserFunctions : ApiFunction
                     return Reply.Conflict("Your building still has residents or receipts. Please contact support to hand it over before deleting your account.");
             }
 
+            // Receipts issued while this person administered a building belong to that building (it was handed over since):
+            // they now carry the current administrator, so nothing the building needs disappears with this account.
+            foreach (var receipt in await _db.Receipts.Include(r => r.Building).Where(r => r.CreatedByUserId == user.Id).ToListAsync(ct))
+                receipt.CreatedByUserId = receipt.Building!.AdminUserId;
+
             // Removed in one SaveChanges (one transaction); EF orders the deletes by their dependencies.
             _db.Apartments.RemoveRange(await _db.Apartments.Where(a => a.UserId == user.Id).ToListAsync(ct));
             _db.WalletEntries.RemoveRange(await _db.WalletEntries.Where(w => w.UserId == user.Id).ToListAsync(ct));

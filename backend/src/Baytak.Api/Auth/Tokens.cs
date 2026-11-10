@@ -20,9 +20,16 @@ public sealed class JwtOptions
 /// <summary>Who a valid token belongs to, and which session generation it was issued for.</summary>
 public readonly record struct TokenSubject(Guid UserId, int SessionVersion);
 
+/// <summary>What a token that already passed <see cref="ITokenService.Validate"/> says about itself.</summary>
+public readonly record struct TokenInfo(string Role, DateTime Expires);
+
 public interface ITokenService
 {
-    string Issue(User user);
+    /// <summary>A new login token. Pass <paramref name="expires"/> to keep the expiry of the token it replaces.</summary>
+    string Issue(User user, DateTime? expires = null);
+
+    /// <summary>The role and expiry written in a token. Call it only for a token that was validated.</summary>
+    TokenInfo? Inspect(string token);
 
     /// <summary>Validates signature, issuer, audience and expiry. Returns null when invalid.</summary>
     TokenSubject? Validate(string token);
@@ -71,7 +78,7 @@ public sealed class TokenService : ITokenService
     /// <summary>
     /// Claims match what the mobile app reads: <c>phoneNumber</c> and <c>role</c> (plus <c>exp</c>).
     /// </summary>
-    public string Issue(User user)
+    public string Issue(User user, DateTime? expires = null)
     {
         var now = _time.GetUtcNow().UtcDateTime;
         var token = new JwtSecurityToken(
@@ -87,9 +94,22 @@ public sealed class TokenService : ITokenService
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
             ],
             notBefore: now,
-            expires: now.AddDays(_options.ExpiryDays),
+            expires: expires ?? now.AddDays(_options.ExpiryDays),
             signingCredentials: _credentials);
         return _handler.WriteToken(token);
+    }
+
+    public TokenInfo? Inspect(string token)
+    {
+        try
+        {
+            var jwt = _handler.ReadJwtToken(token);
+            return new TokenInfo(jwt.Claims.FirstOrDefault(c => c.Type == "role")?.Value ?? string.Empty, jwt.ValidTo);
+        }
+        catch (Exception ex) when (ex is SecurityTokenException or ArgumentException)
+        {
+            return null;
+        }
     }
 
     public TokenSubject? Validate(string token)

@@ -101,7 +101,7 @@ $fields = @(
 Call POST "save-receipt-format" @{ currency = "USD"; customFields = $fields; Date = "" } $adminJwt | Out-Null
 
 $buildings = Call GET "buildings/get" $null $adminJwt
-$building = @($buildings | Where-Object { $_.label -like "Demo Residence*" -or $_.buildingName -like "Demo Residence*" }) | Select-Object -First 1
+$building = @($buildings | Where-Object { $_.label -match '^(Demo|Cedar) Residence' -or $_.buildingName -match '^(Demo|Cedar) Residence' }) | Select-Object -First 1
 $buildingId = if ($building.value) { $building.value } elseif ($building.id) { $building.id } else { @($buildings)[0].value }
 
 function Join-Building($row) {

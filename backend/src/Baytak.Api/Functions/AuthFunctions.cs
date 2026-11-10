@@ -126,6 +126,23 @@ public sealed class AuthFunctions : ApiFunction
             return Reply.Ok(new { auth = _tokens.Issue(user), userStatus = user.Status });
         });
 
+    /// <summary>
+    /// Brings a signed-in person's token up to date with their role (the role is written into the token). It is used after an
+    /// administrator hands the building over: the new administrator and the former one each pick up the change without
+    /// signing in again. A token whose role is already right is returned as it is, and a re-issued token keeps the expiry of the
+    /// one it replaces, so this can never be used to keep a stolen token alive.
+    /// </summary>
+    [Function("AuthRefresh")]
+    public Task<IActionResult> Refresh(
+        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "auth/refresh")] HttpRequest req, CancellationToken ct) =>
+        Run(req, AccessLevel.Signed, ct, user =>
+        {
+            var presented = req.Headers.Authorization.ToString()["Bearer ".Length..].Trim();
+            var info = _tokens.Inspect(presented);
+            var token = info is { } i && i.Role != user.Role ? _tokens.Issue(user, i.Expires) : presented;
+            return Task.FromResult<IActionResult>(Reply.Ok(new { auth = token, userStatus = user.Status }));
+        });
+
     private static double? ToDouble(JsonElement? value)
     {
         if (value is not { } v) return null;
