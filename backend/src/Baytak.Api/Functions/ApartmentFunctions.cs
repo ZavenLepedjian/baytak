@@ -16,6 +16,9 @@ public sealed class ApartmentRequest
     public string? AppartmentDescription { get; set; }
     public int? Floor { get; set; }
     public int? BuildingId { get; set; }
+
+    /// <summary>The building's invite code (from the administrator's WhatsApp message). When it is given, it decides the building.</summary>
+    public string? InviteCode { get; set; }
 }
 
 public sealed class ApartmentIdRequest
@@ -75,6 +78,15 @@ public sealed class ApartmentFunctions : ApiFunction
             if (number.Length is 0 or > 60) return Reply.BadRequest("Please enter an apartment number (up to 60 characters)");
             if (description.Length is 0 or > 500) return Reply.BadRequest("Please enter an apartment description (up to 500 characters)");
             if (body.Floor is not (>= 1 and <= 200)) return Reply.BadRequest("Please set the floor your apartment is on");
+            if (!string.IsNullOrWhiteSpace(body.InviteCode))
+            {
+                // The code names the building (and replaces a building picked from the list); the request still waits for approval.
+                var code = InviteCodes.Normalize(body.InviteCode);
+                var at = _time.GetUtcNow().UtcDateTime;
+                var invite = code is null ? null : await _db.BuildingInvites.AsNoTracking().FirstOrDefaultAsync(i => i.Code == code && i.ExpiresAt > at, ct);
+                if (invite is null) return Reply.BadRequest("This invite code is not valid or has expired");
+                body.BuildingId = invite.BuildingId;
+            }
             if (body.BuildingId is not > 0) return Reply.BadRequest("Please select the building you want to join");
             var buildingId = body.BuildingId.Value;
 

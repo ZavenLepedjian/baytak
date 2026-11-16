@@ -12,6 +12,7 @@ using Baytak.Mcp.Common;
 using Baytak.Mcp.Mcp;
 using Baytak.Mcp.OAuth;
 using Baytak.Mcp.Security;
+using Baytak.Mcp.WhatsApp;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,7 +43,13 @@ public sealed class McpHost : IDisposable
     /// <summary>Makes every call to the API fail as if it were unreachable.</summary>
     public bool ApiDown { get; set; }
 
-    public McpHost()
+    /// <summary>The language model of the WhatsApp assistant, played by the test.</summary>
+    public FakeModel Model { get; } = new();
+
+    /// <summary>Everything the WhatsApp assistant sent, instead of sending it.</summary>
+    public FakeWhatsApp WhatsApp { get; } = new();
+
+    public McpHost(Action<WhatsAppOptions>? whatsApp = null)
     {
         Api.Time.SetUtcNow(new DateTimeOffset(2026, 10, 15, 9, 0, 0, TimeSpan.Zero)); // the receipts in these tests are from October 2026
         var services = new ServiceCollection();
@@ -62,6 +69,22 @@ public sealed class McpHost : IDisposable
         services.AddSingleton<BaytakApi>();
         services.AddSingleton<BaytakTools>();
         services.AddSingleton<IReplayStore, MemoryReplayStore>();
+
+        services.Configure<WhatsAppOptions>(o =>
+        {
+            o.VerifyToken = WhatsAppVerifyToken;
+            o.AppSecret = WhatsAppSecret;
+            o.AccessToken = "wa-access-token";
+            o.PhoneNumberId = WhatsAppNumberId;
+            o.OpenAiKey = "ai-key";
+            o.ApiServiceKey = TestApp.ServiceKey;
+            whatsApp?.Invoke(o);
+        });
+        services.AddSingleton<IChatModel>(Model);
+        services.AddSingleton<IWhatsAppSender>(WhatsApp);
+        services.AddSingleton<MemoryChatStore>();
+        services.AddSingleton<IChatStore>(sp => sp.GetRequiredService<MemoryChatStore>());
+        services.AddSingleton<WhatsAppBot>();
         Services = services.BuildServiceProvider();
     }
 
@@ -202,6 +225,77 @@ public sealed class McpHost : IDisposable
 
     public static bool IsError(JsonElement toolResult) => toolResult.TryGetProperty("isError", out var e) && e.GetBoolean();
 
+    // ------------------------------------------------------------------ WhatsApp
+
+    public const string WhatsAppVerifyToken = "verify-me";
+    public const string WhatsAppSecret = "meta-app-secret";
+    public const string WhatsAppNumberId = "106540352242922";
+
+    private int _wamid;
+
+    /// <summary>A number as WhatsApp gives it: digits with the country code, no plus.</summary>
+    public static string WaId(string phone) => TestApp.PhoneNumberFor(phone).TrimStart('+');
+
+    /// <summary>The person writes to the assistant.</summary>
+    public Task Say(string phone, string text) =>
+        Services.GetRequiredService<WhatsAppBot>().HandleAsync(new Incoming(WaId(phone), $"wamid.{++_wamid}", "text", text, null), CancellationToken.None);
+
+    /// <summary>The person taps a button under a message.</summary>
+    public Task Tap(string phone, string buttonId) =>
+        Services.GetRequiredService<WhatsAppBot>().HandleAsync(new Incoming(WaId(phone), $"wamid.{++_wamid}", "interactive", null, buttonId), CancellationToken.None);
+
+    /// <summary>Calls the WhatsApp functions class, which has no HTTP-only signature for <see cref="Invoke{T}"/>.</summary>
+    public async Task<TResult> WhatsAppFunction<TResult>(Func<WhatsAppFunctions, HttpRequest, Task<TResult>> handler, Action<HttpRequest>? build = null)
+    {
+        using var scope = Services.CreateScope();
+        var function = ActivatorUtilities.CreateInstance<WhatsAppFunctions>(scope.ServiceProvider);
+        var context = new DefaultHttpContext();
+        build?.Invoke(context.Request);
+        return await handler(function, context.Request);
+    }
+
+    /// <summary>Posts a webhook body as Meta would, signed with the app secret (or with <paramref name="secret"/>).</summary>
+    public Task<WebhookOutput> Webhook(string json, string? secret = WhatsAppSecret) =>
+        WhatsAppFunction((f, r) => f.Receive(r, CancellationToken.None), r =>
+        {
+            SetBody(r, json, "application/json");
+            if (secret is not null)
+                r.Headers["X-Hub-Signature-256"] = "sha256=" + Convert.ToHexString(HMACSHA256.HashData(Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes(json))).ToLowerInvariant();
+        });
+
+    /// <summary>Meta's webhook body for one message.</summary>
+    public string WebhookBody(string phone, object message, string? numberId = null, string? id = null, DateTimeOffset? sentAt = null)
+    {
+        var fields = JsonSerializer.SerializeToNode(message)!.AsObject();
+        fields["from"] = WaId(phone);
+        fields["id"] = id ?? $"wamid.{++_wamid}";
+        fields["timestamp"] = (sentAt ?? Api.Time.GetUtcNow()).ToUnixTimeSeconds().ToString();
+        return JsonSerializer.Serialize(new
+        {
+            @object = "whatsapp_business_account",
+            entry = new[]
+            {
+                new
+                {
+                    id = "102290129340398",
+                    changes = new[]
+                    {
+                        new
+                        {
+                            field = "messages",
+                            value = new
+                            {
+                                messaging_product = "whatsapp",
+                                metadata = new { display_phone_number = "9611234567", phone_number_id = numberId ?? WhatsAppNumberId },
+                                messages = new[] { fields },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    }
+
     // ------------------------------------------------------------------ a building to work with
 
     public const string AdminPhone = "03 111 111";
@@ -271,6 +365,76 @@ public sealed class McpHost : IDisposable
 
     // ------------------------------------------------------------------ plumbing
 
+    /// <summary>
+    /// Plays the language model. A test queues what the model would answer; each call takes the next answer and keeps the
+    /// conversation and the tools it was given, so the test can check what the model was told.
+    /// </summary>
+    public sealed class FakeModel : IChatModel
+    {
+        private readonly Queue<Func<JsonElement, ModelReply>> _script = new();
+
+        public List<(JsonElement Messages, List<string> Tools)> Calls { get; } = new();
+
+        /// <summary>The anonymous person id sent with each call.</summary>
+        public List<string> Users { get; } = new();
+
+        /// <summary>When set, every call fails as if Azure OpenAI were down.</summary>
+        public bool Down { get; set; }
+
+        public void Says(string text) => _script.Enqueue(_ => new ModelReply(text, []));
+
+        public void Asks(string tool, object? arguments = null) =>
+            _script.Enqueue(_ => new ModelReply(null, [new ToolCall($"call_{Guid.NewGuid():N}", tool, JsonSerializer.Serialize(arguments ?? new { }))]));
+
+        public void Refuses() => _script.Enqueue(_ => new ModelReply(null, [], Refused: true));
+
+        public Task<ModelReply> CompleteAsync(System.Text.Json.Nodes.JsonArray messages, System.Text.Json.Nodes.JsonArray tools, string user, CancellationToken ct)
+        {
+            Users.Add(user);
+            if (Down) throw new ChatModelException("The model could not be reached.");
+            var seen = JsonDocument.Parse(messages.ToJsonString()).RootElement;
+            Calls.Add((seen, tools.Select(t => t!["function"]!["name"]!.GetValue<string>()).ToList()));
+            Assert.True(_script.Count > 0, "The model was asked more often than the test scripted.");
+            return Task.FromResult(_script.Dequeue()(seen));
+        }
+
+        /// <summary>The last thing the model was shown: what a tool answered, or what the person wrote.</summary>
+        public string LastShown => Calls[^1].Messages[Calls[^1].Messages.GetArrayLength() - 1].GetProperty("content").GetString()!;
+
+        public string System => Calls[^1].Messages[0].GetProperty("content").GetString()!;
+    }
+
+    public sealed record SentMessage(string To, string Text, IReadOnlyList<ReplyButton> Buttons);
+
+    public sealed class FakeWhatsApp : IWhatsAppSender
+    {
+        public List<SentMessage> Sent { get; } = new();
+        public List<string> Read { get; } = new();
+
+        public SentMessage Last => Sent[^1];
+
+        public Task<bool> SendTextAsync(string to, string text, CancellationToken ct)
+        {
+            Sent.Add(new SentMessage(to, text, []));
+            return Task.FromResult(true);
+        }
+
+        public Task<bool> SendButtonsAsync(string to, string text, string shortText, IReadOnlyList<ReplyButton> buttons, CancellationToken ct)
+        {
+            Assert.InRange(buttons.Count, 1, 3);
+            Assert.All(buttons, b => Assert.InRange(b.Title.Length, 1, 20));
+            Assert.NotEmpty(shortText);
+            Sent.Add(new SentMessage(to, text, buttons));
+            return Task.FromResult(true);
+        }
+
+        public Task MarkReadAsync(string messageId, CancellationToken ct)
+        {
+            Read.Add(messageId);
+            return Task.CompletedTask;
+        }
+    }
+
     private sealed class Factory(McpHost host) : IHttpClientFactory
     {
         public HttpClient CreateClient(string name) => name switch
@@ -308,6 +472,8 @@ public sealed class McpHost : IDisposable
             {
                 ("POST", "auth/login") => await api.Call<AuthFunctions>((f, r, c) => f.Login(r, c), token: token, rawBody: body),
                 ("POST", "auth/validate") => await api.Call<AuthFunctions>((f, r, c) => f.Validate(r, c), token: token, rawBody: body),
+                ("POST", "auth/service-login") => await api.Call<AuthFunctions>((f, r, c) => f.ServiceLogin(r, c), rawBody: body,
+                    headers: request.Headers.TryGetValues(AuthFunctions.ServiceKeyHeader, out var keys) ? [(AuthFunctions.ServiceKeyHeader, keys.Single())] : null),
                 ("GET", "user/status") => await api.Call<UserFunctions>((f, r, c) => f.Status(r, c), token: token),
                 ("GET", "appartment/get") => await api.Call<ApartmentFunctions>((f, r, c) => f.Get(r, c), token: token),
                 ("GET", "appartment/receipts") => await api.Call<ReceiptFunctions>((f, r, c) => f.All(r, c), token: token),

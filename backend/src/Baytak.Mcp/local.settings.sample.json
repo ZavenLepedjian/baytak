@@ -8,7 +8,15 @@
     "Mcp__SecretKey": "<32 random bytes, base64: openssl rand -base64 32>",
     "Mcp__ApiBaseUrl": "http://localhost:7071/api",
     "Mcp__ApiKey": "",
-    "Mcp__ReplayStore": "Memory"
+    "Mcp__ReplayStore": "Memory",
+
+    "WhatsApp__VerifyToken": "",
+    "WhatsApp__AppSecret": "",
+    "WhatsApp__AccessToken": "",
+    "WhatsApp__PhoneNumberId": "",
+    "WhatsApp__OpenAiModel": "gpt-6-luna",
+    "WhatsApp__OpenAiKey": "",
+    "WhatsApp__ApiServiceKey": ""
   },
   "Host": {
     "LocalHttpPort": 7072

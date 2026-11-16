@@ -65,6 +65,48 @@ public sealed class BaytakTools
 
     public Task<ToolResult> CallAsync(string name, JsonElement arguments, McpSession session) => _tools[name].Run(arguments, session);
 
+    // ==================================================================== for chat assistants (WhatsApp)
+
+    /// <summary>True for a tool that changes something. A chat assistant never runs these on the model's word alone.</summary>
+    public bool IsWrite(string name) => _tools.TryGetValue(name, out var t) && !t.ReadOnly;
+
+    public bool IsAdminOnly(string name) => _tools.TryGetValue(name, out var t) && t.AdminOnly;
+
+    /// <summary>
+    /// The tools in the "function" format of chat-completion models. Unlike the MCP list this one is made per message, so a
+    /// resident's assistant is only offered the three resident tools.
+    /// </summary>
+    public JsonArray FunctionList(bool approvedAdmin) => new(_tools.Values.Where(t => approvedAdmin || !t.AdminOnly).Select(t => (JsonNode?)new JsonObject
+    {
+        ["type"] = "function",
+        ["function"] = new JsonObject { ["name"] = t.Name, ["description"] = t.Description, ["parameters"] = JsonNode.Parse(t.InputSchema) },
+    }).ToArray());
+
+    /// <summary>
+    /// What a write tool would do, checked against the building but changing nothing. The person is shown it and confirms;
+    /// <see cref="ToolResult.Structured"/> carries the same facts, so the wording can be made in their language.
+    /// </summary>
+    public Task<ToolResult> PreviewAsync(string name, JsonElement arguments, McpSession session) => name switch
+    {
+        "set_payment_status" => PreviewPaymentStatusAsync(arguments, session),
+        "send_payment_reminder" => PreviewReminderAsync(arguments, session),
+        "approve_join_request" => PreviewDecisionAsync(arguments, session, approve: true),
+        "reject_join_request" => PreviewDecisionAsync(arguments, session, approve: false),
+        "issue_receipt" => IssueReceiptAsync(WithConfirm(arguments, false), session),
+        _ => Task.FromResult(ToolResult.Fail($"{name} has no preview.")),
+    };
+
+    /// <summary>The same arguments with confirm set: false for a preview, true to issue what the person agreed to.</summary>
+    public static JsonElement WithConfirm(JsonElement arguments, bool confirm) => With(arguments, "confirm", confirm);
+
+    /// <summary>The same arguments with one value set (for example the receipt a preview was made for).</summary>
+    public static JsonElement With(JsonElement arguments, string name, JsonNode? value)
+    {
+        var copy = arguments.ValueKind == JsonValueKind.Object ? JsonNode.Parse(arguments.GetRawText())!.AsObject() : new JsonObject();
+        copy[name] = value;
+        return JsonSerializer.SerializeToElement(copy);
+    }
+
     private static JsonObject Describe(Tool t) => new()
     {
         ["name"] = t.Name,
@@ -339,38 +381,94 @@ public sealed class BaytakTools
         });
     }
 
-    private async Task<ToolResult> SetPaymentStatusAsync(JsonElement args, McpSession s)
+    /// <summary>A payment change that passed every check: the receipt, and the apartments on it as the door plates spell them.</summary>
+    private sealed record PaymentChange(int ReceiptId, string? Date, decimal Total, string Currency, List<(string Number, int Id)> Apartments, bool Paid);
+
+    private async Task<(PaymentChange? Change, ToolResult? Stop)> ResolvePaymentChangeAsync(JsonElement args, McpSession s)
     {
         var numbers = StrArray(args, "apartments");
-        if (numbers.Count == 0) return ToolResult.Fail("Name at least one apartment, for example [\"3B\"].");
+        if (numbers.Count == 0) return (null, ToolResult.Fail("Name at least one apartment, for example [\"3B\"]."));
         var status = Str(args, "status");
-        if (status is not ("paid" or "unpaid")) return ToolResult.Fail("status must be paid or unpaid");
+        if (status is not ("paid" or "unpaid")) return (null, ToolResult.Fail("status must be paid or unpaid"));
 
         var (summary, stop) = await LoadSummaryAsync(Int(args, "receipt_id"), s);
-        if (stop is not null) return stop;
+        if (stop is not null) return (null, stop);
         var sel = summary!.Value.GetProperty("selected");
-        var receiptId = sel.GetProperty("id").GetInt32();
         var onReceipt = sel.GetProperty("apartments").EnumerateArray()
             .ToDictionary(a => a.GetProperty("apartmentNumber").GetString()!.Trim(), a => a.GetProperty("apartmentId").GetInt32(), StringComparer.OrdinalIgnoreCase);
 
         var unknown = numbers.Where(n => !onReceipt.ContainsKey(n.Trim())).ToList();
         if (unknown.Count > 0)
-            return ToolResult.Fail($"Not on this receipt: {string.Join(", ", unknown)}. Apartments on it: {string.Join(", ", onReceipt.Keys)}.");
+            return (null, ToolResult.Fail($"Not on this receipt: {string.Join(", ", unknown)}. Apartments on it: {string.Join(", ", onReceipt.Keys)}."));
 
         var canonical = onReceipt.Keys.ToDictionary(k => k, k => k, StringComparer.OrdinalIgnoreCase);
+        var chosen = numbers.Select(n => canonical[n.Trim()]).Distinct(StringComparer.OrdinalIgnoreCase).Select(n => (n, onReceipt[n])).ToList();
+        return (new PaymentChange(sel.GetProperty("id").GetInt32(), sel.GetProperty("date").GetString(), sel.GetProperty("total").GetDecimal(),
+            sel.GetProperty("currency").GetString() ?? "", chosen, status == "paid"), null);
+    }
+
+    private async Task<ToolResult> SetPaymentStatusAsync(JsonElement args, McpSession s)
+    {
+        var (change, stop) = await ResolvePaymentChangeAsync(args, s);
+        if (stop is not null) return stop;
+
         var done = new List<string>();
-        foreach (var number in numbers.Select(n => canonical[n.Trim()]).Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (var (number, id) in change!.Apartments)
         {
             var reply = await Post("receipt/appartment/save-status",
-                new { appartmentId = onReceipt[number], receiptId, status = status == "paid" ? "Paid" : "Pending" }, s);
+                new { appartmentId = id, receiptId = change.ReceiptId, status = change.Paid ? "Paid" : "Pending" }, s);
             if (!reply.Ok) return ToolResult.Fail(done.Count == 0 ? reply.Text : $"Marked {Join(done)} first, then {number} failed: {reply.Text}");
             done.Add(number);
         }
 
-        var date = FormatDate(sel.GetProperty("date").GetString());
-        return new ToolResult($"Marked {Join(done)} as {(status == "paid" ? "paid" : "unpaid")} on the {date} receipt.",
-            new { receiptId, apartments = done, status = status == "paid" ? "Paid" : "Unpaid" });
+        return new ToolResult($"Marked {Join(done)} as {(change.Paid ? "paid" : "unpaid")} on the {FormatDate(change.Date)} receipt.",
+            new { receiptId = change.ReceiptId, date = change.Date, apartments = done, status = change.Paid ? "Paid" : "Unpaid" });
     }
+
+    private async Task<ToolResult> PreviewPaymentStatusAsync(JsonElement args, McpSession s)
+    {
+        var (change, stop) = await ResolvePaymentChangeAsync(args, s);
+        if (stop is not null) return Refusal(stop);
+
+        var numbers = change!.Apartments.Select(a => a.Number).ToList();
+        return new ToolResult(
+            $"Mark {Plural(numbers.Count, "apartment")} {Join(numbers)} as {(change.Paid ? "paid" : "unpaid")} on the {FormatDate(change.Date)} receipt ({Money(change.Total, change.Currency)} per apartment).",
+            new { action = "set_payment_status", receiptId = change.ReceiptId, date = change.Date, total = change.Total, currency = change.Currency, apartments = numbers, status = change.Paid ? "Paid" : "Unpaid" });
+    }
+
+    private async Task<ToolResult> PreviewReminderAsync(JsonElement args, McpSession s)
+    {
+        var (summary, stop) = await LoadSummaryAsync(Int(args, "receipt_id"), s);
+        if (stop is not null) return Refusal(stop);
+        var sel = summary!.Value.GetProperty("selected");
+
+        var date = sel.GetProperty("date").GetString();
+        var unpaid = sel.GetProperty("count").GetInt32() - sel.GetProperty("paidCount").GetInt32();
+        if (unpaid <= 0) return ToolResult.Fail($"Everyone has paid the {FormatDate(date)} receipt, so there is no one to remind.");
+        if (!sel.GetProperty("canRemind").GetBoolean()) return ToolResult.Fail("A reminder was already sent for this receipt in the last 24 hours.");
+
+        var total = sel.GetProperty("total").GetDecimal();
+        var currency = sel.GetProperty("currency").GetString() ?? "";
+        return new ToolResult(
+            $"Send a payment reminder for the {FormatDate(date)} receipt ({Money(total, currency)} per apartment) to the {unpaid} {Plural(unpaid, "apartment")} that {(unpaid == 1 ? "hasn't" : "haven't")} paid.",
+            new { action = "send_payment_reminder", receiptId = sel.GetProperty("id").GetInt32(), date, total, currency, unpaid });
+    }
+
+    private async Task<ToolResult> PreviewDecisionAsync(JsonElement args, McpSession s, bool approve)
+    {
+        if (Int(args, "request_id") is not { } id) return ToolResult.Fail("request_id is required. Get it from list_join_requests.");
+        var reply = await Get("appartment/pending/get", s);
+        if (!reply.Ok) return ToolResult.Fail(reply.Text);
+
+        var request = reply.IsMarker("NoAppartments") ? null : ApartmentRows(reply.Json()).FirstOrDefault(r => r.Id == id);
+        if (request is null) return ToolResult.Fail($"No waiting join request has the id {id}. Use list_join_requests to see the waiting requests.");
+        return new ToolResult(
+            $"{(approve ? "Approve" : "Reject")} the join request for apartment {request.Number}, {OrdinalFloor(request.Floor)}{(request.Resident is null ? "" : $", from {request.Resident}")}.",
+            new { action = approve ? "approve_join_request" : "reject_join_request", requestId = id, apartment = request.Number, floor = request.Floor, resident = request.Resident });
+    }
+
+    /// <summary>A preview that cannot go ahead ("No receipts have been issued yet.") is a refusal, whatever the read tools make of it.</summary>
+    private static ToolResult Refusal(ToolResult stop) => stop.IsError ? stop : ToolResult.Fail(stop.Text);
 
     private async Task<ToolResult> SendReminderAsync(JsonElement args, McpSession s)
     {
@@ -384,7 +482,7 @@ public sealed class BaytakTools
         var sent = reply.Json().GetProperty("sent").GetInt32();
         return new ToolResult(
             $"Sent a payment reminder for the {FormatDate(sel.GetProperty("date").GetString())} receipt to the {sent} {Plural(sent, "apartment")} that {(sent == 1 ? "hasn't" : "haven't")} paid.",
-            new { receiptId, reminded = sent });
+            new { receiptId, date = sel.GetProperty("date").GetString(), reminded = sent });
     }
 
     private async Task<ToolResult> JoinRequestsAsync(JsonElement args, McpSession s)
@@ -480,7 +578,7 @@ public sealed class BaytakTools
                     $"Preview, nothing has been issued yet. A receipt of {Money(one.Total, one.Currency)} dated {When(one)} ({string.Join(", ", one.Lines)}) for {Who(one, all)}; " +
                     $"each apartment owes {Money(one.Total, one.Currency)} and every resident gets a notification. Receipts can't be edited or deleted once they're added. " +
                     "Show this to the administrator. If they agree, call issue_receipt again with the same values and confirm=true.",
-                    new { preview = true, currency = one.Currency, total = one.Total, date = one.Date ?? "today", lines = one.Lines, apartments = one.Targets.Select(t => t.Number), apartmentCount = one.Targets.Count });
+                    new { preview = true, currency = one.Currency, total = one.Total, date = one.Date ?? "today", lines = one.Lines, apartments = one.Targets.Select(t => t.Number), apartmentCount = one.Targets.Count, allApartments = one.Chosen.Count == 0 });
             }
 
             var described = specs.Select((r, i) => $"({i + 1}) {Money(r.Total, r.Currency)} dated {When(r)} ({string.Join(", ", r.Lines)}) for {Who(r, all)}");
@@ -491,7 +589,7 @@ public sealed class BaytakTools
                 new
                 {
                     preview = true,
-                    receipts = specs.Select(r => new { currency = r.Currency, total = r.Total, date = r.Date ?? "today", lines = r.Lines, apartments = r.Targets.Select(t => t.Number), apartmentCount = r.Targets.Count }),
+                    receipts = specs.Select(r => new { currency = r.Currency, total = r.Total, date = r.Date ?? "today", lines = r.Lines, apartments = r.Targets.Select(t => t.Number), apartmentCount = r.Targets.Count, allApartments = r.Chosen.Count == 0 }),
                 });
         }
 
@@ -524,12 +622,12 @@ public sealed class BaytakTools
         {
             var one = specs[0];
             return new ToolResult($"Receipt added successfully. {Money(one.Total, one.Currency)} dated {When(one)} was issued to {Who(one, all)}, and their residents were notified.",
-                new { issued = true, currency = one.Currency, total = one.Total, date = one.Date ?? "today", apartments = one.Targets.Select(t => t.Number), apartmentCount = one.Targets.Count });
+                new { issued = true, currency = one.Currency, total = one.Total, date = one.Date ?? "today", apartments = one.Targets.Select(t => t.Number), apartmentCount = one.Targets.Count, allApartments = one.Chosen.Count == 0 });
         }
 
         var done = specs.Select(r => $"{Money(r.Total, r.Currency)} dated {When(r)} to {Who(r, all)}");
         return new ToolResult($"{specs.Count} receipts were issued: {string.Join("; ", done)}. Their residents were notified.",
-            new { issued = true, receipts = specs.Select(r => new { currency = r.Currency, total = r.Total, date = r.Date ?? "today", apartments = r.Targets.Select(t => t.Number), apartmentCount = r.Targets.Count }) });
+            new { issued = true, receipts = specs.Select(r => new { currency = r.Currency, total = r.Total, date = r.Date ?? "today", apartments = r.Targets.Select(t => t.Number), apartmentCount = r.Targets.Count, allApartments = r.Chosen.Count == 0 }) });
     }
 
     private static string When(ReceiptSpec r) => r.Date is null ? "today" : FormatDate(r.Date);
@@ -691,7 +789,7 @@ public sealed class BaytakTools
     };
 
     /// <summary>"1,500,000 LBP", "75 USD", "1,250.50 USD": cents only for USD amounts that have them.</summary>
-    private static string Money(decimal amount, string currency) => $"{FormatAmount(amount, currency)} {currency}";
+    internal static string Money(decimal amount, string currency) => $"{FormatAmount(amount, currency)} {currency}";
 
     private static string FormatAmount(decimal amount, string currency)
     {
@@ -700,7 +798,7 @@ public sealed class BaytakTools
         return currency == "USD" && !whole ? rounded.ToString("#,##0.00", CultureInfo.InvariantCulture) : rounded.ToString("#,##0.##", CultureInfo.InvariantCulture);
     }
 
-    private static string FormatDate(string? ymd) =>
+    internal static string FormatDate(string? ymd) =>
         DateOnly.TryParseExact(ymd?.Length >= 10 ? ymd[..10] : ymd, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)
             ? d.ToString("MMM d, yyyy", English)
             : ymd ?? "";
@@ -714,7 +812,7 @@ public sealed class BaytakTools
 
     private static string Plural(int count, string word) => count == 1 ? word : word + "s";
 
-    private static string Join(List<string> items) =>
+    internal static string Join(List<string> items) =>
         items.Count <= 1 ? string.Join("", items) : string.Join(", ", items.Take(items.Count - 1)) + " and " + items[^1];
 
     private static string? NullIfEmpty(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();

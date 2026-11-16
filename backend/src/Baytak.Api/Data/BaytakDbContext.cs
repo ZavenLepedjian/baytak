@@ -15,6 +15,7 @@ public class BaytakDbContext : DbContext
     public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
     public DbSet<Building> Buildings => Set<Building>();
     public DbSet<Apartment> Apartments => Set<Apartment>();
+    public DbSet<BuildingInvite> BuildingInvites => Set<BuildingInvite>();
     public DbSet<ReceiptFormat> ReceiptFormats => Set<ReceiptFormat>();
     public DbSet<Receipt> Receipts => Set<Receipt>();
     public DbSet<ReceiptAssignment> ReceiptAssignments => Set<ReceiptAssignment>();
@@ -55,6 +56,14 @@ public class BaytakDbContext : DbContext
             e.Property(x => x.Street).HasMaxLength(160).IsRequired();
             e.Property(x => x.City).HasMaxLength(100).IsRequired();
             e.Property(x => x.Country).HasMaxLength(100).IsRequired();
+        });
+
+        b.Entity<BuildingInvite>(e =>
+        {
+            e.HasIndex(x => x.BuildingId).IsUnique();
+            e.HasIndex(x => x.Code).IsUnique();
+            e.HasOne(x => x.Building).WithMany().HasForeignKey(x => x.BuildingId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(x => x.Code).HasMaxLength(16).IsRequired();
         });
 
         b.Entity<Apartment>(e =>

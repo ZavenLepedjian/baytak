@@ -128,6 +128,62 @@ support contact and a way for reviewers to sign in. For the last one, the API's 
 give a review phone number a fixed code with no SMS. The privacy policy should say what tools share with the AI provider
 (names, apartment numbers, amounts, receipt notes) and what they don't (phone numbers).
 
+## WhatsApp assistant
+
+The same twelve tools on WhatsApp, for people who would rather write to a number than open an app. It lives in this app
+(folder `WhatsApp/`) and is switched off until every `WhatsApp__` setting below is filled in: until then
+`/whatsapp/webhook` answers 404 and nothing else changes.
+
+ChatGPT brings its own language model; WhatsApp does not, so the assistant asks an OpenAI model (through the
+Responses API, stateless: no conversation is kept at OpenAI for later calls) what the person means and which tool answers it. WhatsApp is connected directly through Meta's Cloud API, with no provider in between.
+
+| Part | What |
+| --- | --- |
+| Who is writing | WhatsApp proves the sender's number, and that number is the Baytak account, so there is no sign-in step. The assistant asks the API for a 15-minute session for that number (`auth/service-login`, which needs `Service__Key` and never creates an account). A number without an account is told how to get the app, once a day |
+| Reading | Read tools run at once and their answers go to the model, which replies in the person's language. Residents are offered the three resident tools, approved administrators all twelve; the API enforces it either way |
+| Changing | The model can only propose a change. The change is checked against the building, then the person sees exactly what would happen with **Confirm** and **Cancel** buttons, in wording made by this app, not by the model. Only their tap (or a plain "yes") carries it out, once, on the receipt that was shown. Buttons expire after 10 minutes |
+| Webhook | `GET /whatsapp/webhook` answers Meta's verification. `POST /whatsapp/webhook` accepts only bodies signed with the Meta app secret (`X-Hub-Signature-256`), puts each new message on the `whatsapp-in` queue (sealed) and answers 200 at once; a queue-triggered function does the slow part |
+| Memory | The last few turns of a conversation, for 2 hours, in the Azure Table `whatsappchats`: one sealed row per number, keyed by a fingerprint of the number, never the number. A nightly timer deletes rows untouched for 2 days |
+| Limits | 40 messages an hour and 200 a day per number (`WhatsApp__MessagesPerHour`, `MessagesPerDay`), so one number cannot run up the model and message bills |
+| Not on WhatsApp | Joining a building, building and receipt-format setup, photos, the wallet, handing over the administrator role, account deletion: these stay in the app. Voice notes and photos get a short "text only" notice |
+
+### Settings
+
+| Setting | Notes |
+| --- | --- |
+| `WhatsApp__VerifyToken` | Any long random text. Typed once into Meta's webhook form |
+| `WhatsApp__AppSecret` | The Meta app's secret (App settings, Basic). Signs every webhook body |
+| `WhatsApp__AccessToken` | A system-user token with `whatsapp_business_messaging` |
+| `WhatsApp__PhoneNumberId` | The business number's id in Meta (digits; not the phone number) |
+| `WhatsApp__OpenAiModel` | Default `gpt-6-luna`. It must support the Responses API and tool (function) calling |
+| `WhatsApp__OpenAiKey` | An OpenAI API key (a project key that may use that model) |
+| `WhatsApp__OpenAiBaseUrl` | Optional, default `https://api.openai.com/v1` |
+| `WhatsApp__ApiServiceKey` | The same value as the API's `Service__Key` (32 characters or more). The Functions host key is not enough for signing people in, because it ships inside the mobile app |
+| `WhatsApp__ReasoningEffort` | Optional, default `none` (fastest and cheapest). `low` or `medium` read harder requests better but are slower. Set it empty for a model that does not reason and rejects the field (for example GPT-4.1) |
+| `WhatsApp__GraphVersion`, `AppUrl`, `MaxReplyTokens`, `HistoryMinutes`, `ConfirmMinutes`, `KeepDays` | Optional. Defaults `v27.0`, the public site, 2000, 120, 10, 2 |
+
+`backend/deploy/setup-whatsapp.ps1` asks for these and stores them on both apps without showing them; it makes the
+service key and the verify token itself.
+
+### Set it up
+
+1. **Meta.** In a Meta Business portfolio, create an app at developers.facebook.com for WhatsApp and add a phone number
+   that is not registered in the WhatsApp phone app. Create a system user with access to the app and the WhatsApp
+   account, and generate a token for it with the two WhatsApp permissions. Note the app secret and the phone number id.
+2. **OpenAI.** At platform.openai.com create a project and an API key for it, and check that the project may use the model
+   (`gpt-6-luna`). Add a payment method or credit; the key stops working without it.
+3. **Deploy** the API and this app (`backend/deploy/deploy-api.ps1`, `deploy-mcp.ps1`), then run `setup-whatsapp.ps1`.
+4. **Webhook.** In the Meta app (WhatsApp, Configuration) enter `https://<this app's host>/whatsapp/webhook` and the
+   verify token, and subscribe to the `messages` field. Meta calls the GET straight away; it must answer.
+5. **Go live.** Add a payment method to the WhatsApp account and switch the Meta app to Live (it asks for the privacy
+   policy URL). Until then only numbers you add as testers can write.
+
+Meta bills replies per message after 1,000 free ones a month per number; messages people send are free. Meta allows AI on
+WhatsApp only as part of a business's own service, which this is: the assistant declines anything that is not Baytak.
+
+Tests: `WhatsAppTests` plays the model and WhatsApp and runs every flow against the real tools and API;
+`WhatsAppClientTests` checks what is sent to OpenAI and to Meta.
+
 ## Security notes
 
 * Redirects are only allowed to the hosts in `Mcp__RedirectHosts`, and the consent page names the host people return to.
@@ -137,5 +193,8 @@ give a review phone number a fixed code with no SMS. The privacy policy should s
 * Browser requests to `/mcp` must come from an allowed Origin (DNS-rebinding protection); ChatGPT's own calls send none.
 * Tool output includes text people typed (names, notes). The server's instructions tell the assistant to treat it as data.
   Issuing a receipt always needs a preview and a second, confirmed call.
+* WhatsApp: a webhook body is trusted only with Meta's signature, and the sender's number only from such a body. What the
+  model writes is never trusted with a change: write tools need the person's Confirm, shown with facts the model did not
+  write. Message text and phone numbers are never logged; the queue and the stored conversations are sealed.
 * Rotate `Mcp__SecretKey` by moving the old value to `Mcp__PreviousSecretKey` first; drop it once connections have been
   re-established (within an hour for access tokens; clients registered under the old key have to reconnect).

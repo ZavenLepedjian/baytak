@@ -38,6 +38,7 @@ builder.Services.Configure<OtpOptions>(config.GetSection("Otp"));
 builder.Services.Configure<SmsOptions>(config.GetSection("Sms"));
 builder.Services.Configure<PushOptions>(config.GetSection("Push"));
 builder.Services.Configure<PhoneOptions>(config.GetSection("Phone"));
+builder.Services.Configure<ServiceOptions>(config.GetSection("Service"));
 builder.Services.Configure<PhotoOptions>(config.GetSection("Photos"));
 
 // ---- database: Azure SQL in production, SQLite for local development

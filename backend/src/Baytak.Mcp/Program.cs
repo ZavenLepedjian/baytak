@@ -6,6 +6,7 @@ using Baytak.Mcp.Common;
 using Baytak.Mcp.Mcp;
 using Baytak.Mcp.OAuth;
 using Baytak.Mcp.Security;
+using Baytak.Mcp.WhatsApp;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
@@ -50,6 +51,14 @@ builder.Services.AddSingleton<BaytakApi>();
 builder.Services.AddSingleton<BaytakTools>();
 
 builder.Services.AddHttpClient(BaytakApi.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(20));
+
+// The WhatsApp assistant. It stays switched off (its webhook answers 404) until every WhatsApp__ setting is filled in.
+builder.Services.Configure<WhatsAppOptions>(config.GetSection("WhatsApp"));
+builder.Services.AddSingleton<IChatModel, OpenAiResponsesModel>();
+builder.Services.AddSingleton<IWhatsAppSender, GraphWhatsAppSender>();
+builder.Services.AddSingleton<WhatsAppBot>();
+builder.Services.AddHttpClient(OpenAiResponsesModel.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(60));
+builder.Services.AddHttpClient(GraphWhatsAppSender.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(15));
 builder.Services.AddHttpClient(ClientRegistry.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(5))
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 
@@ -58,11 +67,13 @@ if (options.ReplayStore.Equals("Memory", StringComparison.OrdinalIgnoreCase))
     // Not shared between instances, so codes could be replayed across them: development only.
     if (!isDevelopment) throw new InvalidOperationException("Mcp:ReplayStore=Memory is only allowed when AZURE_FUNCTIONS_ENVIRONMENT=Development.");
     builder.Services.AddSingleton<IReplayStore, MemoryReplayStore>();
+    builder.Services.AddSingleton<IChatStore, MemoryChatStore>();
 }
 else
 {
     builder.Services.AddSingleton(_ => CreateTableService(config));
     builder.Services.AddSingleton<IReplayStore, TableReplayStore>();
+    builder.Services.AddSingleton<IChatStore, TableChatStore>();
 }
 
 var host = builder.Build();

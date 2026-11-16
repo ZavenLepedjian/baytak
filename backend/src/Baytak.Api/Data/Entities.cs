@@ -191,3 +191,17 @@ public class WalletEntry
 
     public decimal Amount => AmountMinor / 100m;
 }
+
+/// <summary>
+/// The code an administrator shares so residents can find the building and ask to join it. A building has at most one,
+/// replaced when a new one is made, and it stops working at <see cref="ExpiresAt"/>.
+/// </summary>
+public class BuildingInvite
+{
+    public int Id { get; set; }
+    public int BuildingId { get; set; }
+    public Building? Building { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime ExpiresAt { get; set; }
+}

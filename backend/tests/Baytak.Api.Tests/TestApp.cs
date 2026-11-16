@@ -123,7 +123,10 @@ public sealed class TestApp : IDisposable
     public FakePhotoStore Photos { get; } = new();
     public FakeTimeProvider Time { get; } = new(new DateTimeOffset(2025, 3, 1, 9, 0, 0, TimeSpan.Zero));
 
-    public TestApp(Action<OtpOptions>? configureOtp = null, Action<SmsOptions>? configureSms = null, FakeVerifier? verifier = null)
+    /// <summary>The key the WhatsApp assistant presents to auth/service-login in tests.</summary>
+    public const string ServiceKey = "test-service-key-0123456789abcdefghij";
+
+    public TestApp(Action<OtpOptions>? configureOtp = null, Action<SmsOptions>? configureSms = null, FakeVerifier? verifier = null, string? serviceKey = ServiceKey)
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -131,6 +134,7 @@ public sealed class TestApp : IDisposable
         services.Configure<OtpOptions>(o => configureOtp?.Invoke(o));
         services.Configure<SmsOptions>(o => configureSms?.Invoke(o));
         services.Configure<PhoneOptions>(_ => { });
+        services.Configure<ServiceOptions>(o => o.Key = serviceKey);
         services.Configure<PhotoOptions>(_ => { });
         services.AddSingleton<IReceiptPhotoStore>(Photos);
         services.AddSingleton<TimeProvider>(Time);
@@ -164,7 +168,8 @@ public sealed class TestApp : IDisposable
     /// <summary>Runs one request against a function class, in its own DI scope (like one invocation).</summary>
     public async Task<Response> Call<T>(
         Func<T, HttpRequest, CancellationToken, Task<IActionResult>> handler,
-        object? body = null, string? token = null, string? query = null, string? rawBody = null, byte[]? bytes = null) where T : class
+        object? body = null, string? token = null, string? query = null, string? rawBody = null, byte[]? bytes = null,
+        (string Name, string Value)[]? headers = null) where T : class
     {
         using var scope = Services.CreateScope();
         var function = ActivatorUtilities.CreateInstance<T>(scope.ServiceProvider);
@@ -174,6 +179,7 @@ public sealed class TestApp : IDisposable
         request.Method = body is null && rawBody is null && bytes is null ? "GET" : "POST";
         if (query is not null) request.QueryString = new QueryString(query);
         if (token is not null) request.Headers.Authorization = "Bearer " + token;
+        foreach (var (name, value) in headers ?? []) request.Headers[name] = value;
         if (bytes is not null)
         {
             request.Body = new MemoryStream(bytes);

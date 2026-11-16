@@ -40,6 +40,12 @@ public sealed record ApiReply(int Status, string Body)
     public bool IsMarker(string marker) => Ok && Body.TrimStart().StartsWith('"') && Text == marker;
 }
 
+/// <summary>A short API session for the person a WhatsApp message came from.</summary>
+public sealed record ServiceSession(string Jwt, string Role, string UserStatus)
+{
+    public bool ApprovedAdmin => Role == "Admin" && UserStatus == "Approved";
+}
+
 /// <summary>The API refused the signed-in session (expired, or the user signed out in the app). The client must sign in again.</summary>
 public sealed class ApiSessionEndedException : Exception
 {
@@ -68,7 +74,22 @@ public sealed class BaytakApi
         _base = baseUri;
     }
 
+    public const string ServiceKeyHeader = "x-baytak-service-key";
+    public const string NoAccount = "NoAccount";
+
     public Task<ApiReply> GetAsync(string path, string? jwt, CancellationToken ct) => SendAsync(HttpMethod.Get, path, jwt, null, ct);
+
+    /// <summary>
+    /// Signs in the owner of a phone number without an SMS code, for a channel that has already proved who is writing
+    /// (WhatsApp). The session is null when the API refuses; a 404 saying <see cref="NoAccount"/> means nobody uses that number.
+    /// </summary>
+    public async Task<(ServiceSession? Session, ApiReply Reply)> ServiceLoginAsync(string phoneNumber, string serviceKey, CancellationToken ct)
+    {
+        var reply = await SendAsync(HttpMethod.Post, "auth/service-login", null, new { phoneNumber }, ct, serviceKey);
+        if (!reply.Ok) return (null, reply);
+        var json = reply.Json();
+        return (new ServiceSession(json.GetProperty("auth").GetString()!, json.GetProperty("role").GetString() ?? "", json.GetProperty("userStatus").GetString() ?? ""), reply);
+    }
 
     public Task<ApiReply> PostAsync(string path, string? jwt, object body, CancellationToken ct) => SendAsync(HttpMethod.Post, path, jwt, body, ct);
 
@@ -80,10 +101,11 @@ public sealed class BaytakApi
         return reply;
     }
 
-    private async Task<ApiReply> SendAsync(HttpMethod method, string path, string? jwt, object? body, CancellationToken ct)
+    private async Task<ApiReply> SendAsync(HttpMethod method, string path, string? jwt, object? body, CancellationToken ct, string? serviceKey = null)
     {
         using var request = new HttpRequestMessage(method, new Uri(_base, path));
         if (!string.IsNullOrEmpty(_options.ApiKey)) request.Headers.Add("x-functions-key", _options.ApiKey);
+        if (serviceKey is not null) request.Headers.Add(ServiceKeyHeader, serviceKey);
         if (jwt is not null) request.Headers.Authorization = new("Bearer", jwt);
         if (body is not null) request.Content = new StringContent(JsonSerializer.Serialize(body, Json), Encoding.UTF8, "application/json");
 

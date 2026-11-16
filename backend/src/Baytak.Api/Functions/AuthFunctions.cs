@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Baytak.Api.Auth;
 using Baytak.Api.Common;
@@ -17,6 +19,26 @@ public sealed class PhoneOptions
 {
     /// <summary>Prepended to numbers typed without a country code, e.g. "+961".</summary>
     public string DefaultCountryCode { get; set; } = "+961";
+}
+
+/// <summary>Settings for trusted callers inside Baytak (configuration section "Service").</summary>
+public sealed class ServiceOptions
+{
+    public const int MinKeyLength = 32;
+
+    /// <summary>
+    /// Shared secret of the WhatsApp assistant, sent as x-baytak-service-key. The Functions host key is not enough here: it ships
+    /// inside the mobile app. Empty or shorter than 32 characters: service sign-in is switched off.
+    /// </summary>
+    public string? Key { get; set; }
+
+    /// <summary>How long a service session lasts. Short: the assistant asks for a new one with every message.</summary>
+    public int SessionMinutes { get; set; } = 15;
+}
+
+public sealed class ServiceLoginRequest
+{
+    public string? PhoneNumber { get; set; }
 }
 
 public sealed class LoginRequest
@@ -38,22 +60,25 @@ public sealed class ValidateRequest
 public sealed class AuthFunctions : ApiFunction
 {
     public const string RequestAdmin = "request-admin";
+    public const string ServiceKeyHeader = "x-baytak-service-key";
 
     private readonly BaytakDbContext _db;
     private readonly IOtpService _otp;
     private readonly ITokenService _tokens;
     private readonly PhoneOptions _phone;
+    private readonly ServiceOptions _service;
     private readonly TimeProvider _time;
 
     public AuthFunctions(
         IAccessGuard guard, BaytakDbContext db, IOtpService otp, ITokenService tokens,
-        IOptions<PhoneOptions> phone, TimeProvider time, ILogger<AuthFunctions> logger)
+        IOptions<PhoneOptions> phone, IOptions<ServiceOptions> service, TimeProvider time, ILogger<AuthFunctions> logger)
         : base(guard, logger)
     {
         _db = db;
         _otp = otp;
         _tokens = tokens;
         _phone = phone.Value;
+        _service = service.Value;
         _time = time;
     }
 
@@ -141,6 +166,36 @@ public sealed class AuthFunctions : ApiFunction
             var info = _tokens.Inspect(presented);
             var token = info is { } i && i.Role != user.Role ? _tokens.Issue(user, i.Expires) : presented;
             return Task.FromResult<IActionResult>(Reply.Ok(new { auth = token, userStatus = user.Status }));
+        });
+
+    /// <summary>
+    /// Sign-in for the WhatsApp assistant. WhatsApp itself proves who owns the number that wrote, so there is no SMS code: the
+    /// assistant presents the service key and the number, and gets a short session for that account. It never creates an
+    /// account, and it answers 404 as long as no service key is configured.
+    /// </summary>
+    [Function("AuthServiceLogin")]
+    public Task<IActionResult> ServiceLogin(
+        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "auth/service-login")] HttpRequest req, CancellationToken ct) =>
+        RunAnonymous(req, async () =>
+        {
+            var key = _service.Key;
+            if (string.IsNullOrEmpty(key) || key.Length < ServiceOptions.MinKeyLength) return Reply.NotFound("NotFound");
+
+            // Hashed first, so the comparison takes the same time whatever was sent.
+            var presented = req.Headers[ServiceKeyHeader].ToString();
+            if (!CryptographicOperations.FixedTimeEquals(SHA256.HashData(Encoding.UTF8.GetBytes(presented)), SHA256.HashData(Encoding.UTF8.GetBytes(key))))
+                return Reply.Unauthorized();
+
+            var (body, error) = await Reply.ReadJsonAsync<ServiceLoginRequest>(req, ct);
+            if (body is null) return Reply.BadRequest(error!);
+
+            var phone = PhoneNumber.Normalize(body.PhoneNumber, _phone.DefaultCountryCode);
+            var user = phone is null ? null : await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.PhoneNumber == phone, ct);
+            if (user is null) return Reply.NotFound("NoAccount");
+
+            var expires = _time.GetUtcNow().UtcDateTime.AddMinutes(Math.Clamp(_service.SessionMinutes, 1, 60));
+            Logger.LogInformation("Service session for user {UserId}", user.Id);
+            return Reply.Ok(new { auth = _tokens.Issue(user, expires), userStatus = user.Status, role = user.Role });
         });
 
     private static double? ToDouble(JsonElement? value)

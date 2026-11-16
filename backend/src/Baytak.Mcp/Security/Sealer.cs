@@ -39,9 +39,9 @@ public sealed class Sealer
     }
 
     /// <summary>The payload, or null when the value is malformed, tampered with, or sealed for another purpose.</summary>
-    public T? Open<T>(string purpose, string? value) where T : class
+    public T? Open<T>(string purpose, string? value, int maxLength = 8192) where T : class
     {
-        if (string.IsNullOrEmpty(value) || value.Length > 8192) return null;
+        if (string.IsNullOrEmpty(value) || value.Length > maxLength) return null;
         byte[] data;
         try
         {
@@ -77,6 +77,13 @@ public sealed class Sealer
         }
         return null;
     }
+
+    /// <summary>
+    /// A stable key for a value that must not be stored itself (a phone number): the same value always gives the same key,
+    /// and the key cannot be turned back into the value without this app's secret.
+    /// </summary>
+    public string Fingerprint(string purpose, string value) =>
+        Convert.ToHexString(HMACSHA256.HashData(_key, Encoding.UTF8.GetBytes(purpose + ":" + value)), 0, 20).ToLowerInvariant();
 
     /// <summary>A random identifier safe for URLs and Table Storage keys.</summary>
     public static string NewId() => Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
