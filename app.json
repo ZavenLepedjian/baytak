@@ -4,7 +4,7 @@
     "name": "Baytak",
     "slug": "bms",
     "owner": "zavenlep",
-    "version": "1.8.0",
+    "version": "1.9.0",
     "orientation": "portrait",
     "icon": "./assets/adaptive-icon.png",
     "userInterfaceStyle": "light",
@@ -34,7 +34,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.baytak.bms",
-      "versionCode": 16,
+      "versionCode": 22,
       "allowBackup": false
     },
     "web": {
@@ -61,6 +61,7 @@
         {
           "image": "./assets/splash.png",
           "resizeMode": "contain",
+          "imageWidth": 240,
           "backgroundColor": "#ffffff"
         }
       ],
