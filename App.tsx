@@ -13,6 +13,7 @@ import { IBMPlexSansArabic_600SemiBold } from '@expo-google-fonts/ibm-plex-sans-
 import { IBMPlexSansArabic_700Bold } from '@expo-google-fonts/ibm-plex-sans-arabic/700Bold';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './auth/AuthProvider';
+import { PendingInviteProvider } from './auth/PendingInvite';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import RootNavigator from './components/RootNavigator';
 import { ToastHost } from './components/ui';
@@ -46,7 +47,9 @@ export default function App() {
         <AuthProvider>
           <LocationProvider>
             <StatusBar style="dark" />
-            <RootNavigator />
+            <PendingInviteProvider>
+              <RootNavigator />
+            </PendingInviteProvider>
             <ToastHost />
           </LocationProvider>
         </AuthProvider>

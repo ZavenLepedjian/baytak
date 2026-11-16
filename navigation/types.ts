@@ -21,7 +21,8 @@ export type RootStackParamList = {
   // Signed in
   Tabs: NavigatorScreenParams<TabParamList> | undefined;
   Profile: undefined;
-  JoinBuilding: { building?: BuildingChoice } | undefined;
+  /** `inviteCode`: the building's code from the administrator's WhatsApp message (it names the building). */
+  JoinBuilding: { building?: BuildingChoice; inviteCode?: string } | undefined;
   Buildings: undefined;
   Receipts: undefined;
   Wallet: undefined;
@@ -34,6 +35,7 @@ export type RootStackParamList = {
   SelectApartments: { selected: ApartmentChoice[] };
   SetupReceipt: undefined;
   TransferAdmin: undefined;
+  InviteResidents: undefined;
   SetupBuilding: { latitude?: number; longitude?: number } | undefined;
   BuildingLocation: { latitude?: number; longitude?: number } | undefined;
 };

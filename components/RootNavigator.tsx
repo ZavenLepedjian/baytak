@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable } from 'react-native';
-import { DefaultTheme, NavigationContainer, Theme } from '@react-navigation/native';
+import { createNavigationContainerRef, DefaultTheme, NavigationContainer, Theme } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuth } from '../auth/AuthProvider';
+import { usePendingInvite } from '../auth/PendingInvite';
 import { FEATURES } from '../config';
 import { registerForPushNotifications } from '../notifications/push';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
@@ -25,6 +26,7 @@ import Buildings from '../screens/User/Buildings';
 import AdminHome from '../screens/Admin/AdminHome';
 import Manage from '../screens/Admin/Manage';
 import TransferAdmin from '../screens/Admin/TransferAdmin';
+import InviteResidents from '../screens/Admin/InviteResidents';
 import Collection from '../screens/Admin/Collection';
 import Apartments from '../screens/Admin/Appartments';
 import PendingApartments from '../screens/Admin/AddAppartment';
@@ -36,6 +38,7 @@ import SetupBuilding from '../screens/Admin/AddBuilding';
 import BuildingLocation from '../screens/Admin/BuildingLocation';
 import { t } from '../i18n';
 
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
@@ -118,6 +121,16 @@ function PushRegistrar() {
 
 export default function RootNavigator() {
   const { status, needsAdminApproval, isAdmin } = useAuth();
+  const { code: inviteCode, clear: clearInvite } = usePendingInvite();
+  const [navigationReady, setNavigationReady] = useState(false);
+
+  // A building invite code (from a WhatsApp link) goes to the join screen once the person is signed in. That screen uses
+  // the code and clears it; an administrator has no use for it.
+  useEffect(() => {
+    if (!inviteCode || !navigationReady || status !== 'signedIn' || needsAdminApproval) return;
+    if (isAdmin) clearInvite();
+    else navigationRef.navigate('JoinBuilding', { inviteCode });
+  }, [inviteCode, navigationReady, status, needsAdminApproval, isAdmin, clearInvite]);
 
   // Keep the native splash screen up until the saved session has been restored.
   useEffect(() => {
@@ -127,7 +140,7 @@ export default function RootNavigator() {
   if (status === 'loading') return null;
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer ref={navigationRef} theme={navTheme} onReady={() => setNavigationReady(true)}>
       {status === 'signedIn' && !needsAdminApproval ? <PushRegistrar /> : null}
       <Stack.Navigator screenOptions={stackScreenOptions}>
         {status === 'signedOut' ? (
@@ -167,6 +180,7 @@ export default function RootNavigator() {
                 <Stack.Screen name="SelectApartments" component={SelectApartments} options={{ title: t('Select apartments') }} />
                 <Stack.Screen name="SetupReceipt" component={SetupReceipt} options={{ title: t('Receipt format') }} />
                 <Stack.Screen name="TransferAdmin" component={TransferAdmin} options={{ title: t('Transfer administrator') }} />
+                <Stack.Screen name="InviteResidents" component={InviteResidents} options={{ title: t('Invite residents') }} />
                 <Stack.Screen name="SetupBuilding" component={SetupBuilding} options={{ title: t('Building details') }} />
                 <Stack.Screen name="BuildingLocation" component={BuildingLocation} options={{ title: t('Building location') }} />
               </>

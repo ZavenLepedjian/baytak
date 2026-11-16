@@ -1,5 +1,6 @@
 {
   "expo": {
+    "scheme": "baytak",
     "name": "Baytak",
     "slug": "bms",
     "owner": "zavenlep",

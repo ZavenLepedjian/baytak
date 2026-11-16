@@ -29,6 +29,9 @@ export default function Manage() {
           onPress={() => navigation.navigate('PendingApartments')}
         />
         <Divider inset={inset} />
+        <Divider inset={inset} />
+        <ListRow icon="logo-whatsapp" title={t('Invite residents')} subtitle={t('Share a code on WhatsApp')} onPress={() => navigation.navigate('InviteResidents')} />
+        <Divider inset={inset} />
         <ListRow icon="business-outline" title={t('Apartments')} subtitle={t('Residents and contact details')} onPress={() => navigation.navigate('Apartments')} />
       </Card>
 

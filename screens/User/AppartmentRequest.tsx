@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Keyboard, View } from 'react-native';
 import { useApi } from '../../api/useApi';
+import { usePendingInvite } from '../../auth/PendingInvite';
 import { Badge, Button, Card, ErrorState, InfoBanner, ListSkeleton, Screen, Text, TextField, showMessage, statusLabel, statusTone } from '../../components/ui';
+import { normalizeInviteCode } from '../../functions/inviteLink';
 import { useFetch } from '../../hooks/useFetch';
 import type { ScreenProps } from '../../navigation/types';
 import { colors, spacing } from '../../theme';
@@ -36,6 +38,14 @@ export default function JoinBuilding({ navigation, route }: ScreenProps<'JoinBui
   const [saving, setSaving] = useState(false);
   const syncedFrom = useRef<ApartmentForm | null>(null);
 
+  // A building named by an invite code (from the administrator's WhatsApp message) replaces choosing one from the list.
+  const { clear: clearInvite } = usePendingInvite();
+  const [invite, setInvite] = useState<{ code: string; buildingName: string } | null>(null);
+  const [codeText, setCodeText] = useState('');
+  const [codeError, setCodeError] = useState<string | undefined>();
+  const [checking, setChecking] = useState(false);
+  const handledInvite = useRef<string | null>(null);
+
   // Load the server state into the form, but don't clobber edits when the same data re-renders.
   useEffect(() => {
     if (data && syncedFrom.current !== data) {
@@ -53,6 +63,34 @@ export default function JoinBuilding({ navigation, route }: ScreenProps<'JoinBui
     }
   }, [picked]);
 
+  const applyCode = async (raw: string) => {
+    const code = normalizeInviteCode(raw);
+    if (!code) {
+      setCodeError(t('Enter the 8-character code from the invitation'));
+      return;
+    }
+    setCodeError(undefined);
+    setChecking(true);
+    const res = await api.get<{ buildingId: number; buildingName: string }>(`invite/lookup?code=${code}`);
+    setChecking(false);
+    clearInvite(); // used, or refused: either way it is not needed again
+    if (!res.ok || !res.data) return;
+    const { buildingId, buildingName } = res.data;
+    setInvite({ code, buildingName });
+    setForm((f) => ({ ...f, buildingId, buildingName }));
+    setErrors((e) => ({ ...e, building: undefined }));
+  };
+
+  // The code from a link. It waits for the saved request to load, which would otherwise overwrite the building it names.
+  const inviteParam = route.params?.inviteCode;
+  useEffect(() => {
+    if (!inviteParam || !data || handledInvite.current === inviteParam) return;
+    handledInvite.current = inviteParam;
+    if (data.status && data.status !== 'Rejected') clearInvite(); // already in a building, or waiting: nothing to use it for
+    else void applyCode(inviteParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inviteParam, data]);
+
   const editable = !form.status || form.status === 'Rejected';
   const update = (patch: Partial<ApartmentForm>) => setForm((f) => ({ ...f, ...patch }));
 
@@ -68,6 +106,7 @@ export default function JoinBuilding({ navigation, route }: ScreenProps<'JoinBui
     setSaving(true);
     const res = await api.post<string>('appartment/request', {
       ...form,
+      inviteCode: invite?.code,
       appartmentDescription: form.appartmentDescription.trim(),
       appartmentNumber: form.appartmentNumber.trim() || `${form.floor}-${randomId()}`,
     });
@@ -75,6 +114,7 @@ export default function JoinBuilding({ navigation, route }: ScreenProps<'JoinBui
     if (res.ok) {
       showMessage({ message: typeof res.data === 'string' && res.data ? res.data : t('Request sent'), type: 'success' });
       syncedFrom.current = null;
+      setInvite(null);
       void refetch();
     }
   };
@@ -115,6 +155,30 @@ export default function JoinBuilding({ navigation, route }: ScreenProps<'JoinBui
         </InfoBanner>
       )}
 
+      {editable && invite ? (
+        <InfoBanner icon="mail-open-outline">
+          {t('You were invited to join {building}. Fill in your apartment and send your request. The building administrator approves it.', { building: invite.buildingName })}
+        </InfoBanner>
+      ) : null}
+      {editable && !invite ? (
+        <Card style={{ marginBottom: spacing.lg, gap: spacing.md }}>
+          <TextField
+            label={t('Have an invite code?')}
+            icon="ticket-outline"
+            placeholder="ABCD-2345"
+            value={codeText}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            onChangeText={(v) => {
+              setCodeText(v);
+              if (codeError) setCodeError(undefined);
+            }}
+            error={codeError}
+          />
+          <Button title={t('Use code')} variant="secondary" small loading={checking} disabled={!codeText.trim()} onPress={() => void applyCode(codeText)} />
+        </Card>
+      ) : null}
+
       <Card>
         <View style={{ gap: spacing.lg }}>
           <TextField
@@ -125,7 +189,7 @@ export default function JoinBuilding({ navigation, route }: ScreenProps<'JoinBui
             editable={false}
             error={errors.building}
           />
-          {editable ? <Button title={form.buildingId ? t('Change building') : t('Choose building')} variant="secondary" small icon="search-outline" onPress={() => navigation.navigate('Buildings')} /> : null}
+          {editable && !invite ? <Button title={form.buildingId ? t('Change building') : t('Choose building')} variant="secondary" small icon="search-outline" onPress={() => navigation.navigate('Buildings')} /> : null}
 
           <TextField
             label={t('Apartment number')}
