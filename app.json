@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.baytak.bms",
-      "buildNumber": "22",
+      "buildNumber": "23",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "The Baytak App uses your location to help you find the closest buildings registered in the app near you.",
@@ -34,7 +34,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.baytak.bms",
-      "versionCode": 22,
+      "versionCode": 23,
       "allowBackup": false
     },
     "web": {
@@ -65,6 +65,7 @@
           "backgroundColor": "#ffffff"
         }
       ],
+      "./plugins/withAndroidLint",
       "expo-status-bar",
       "expo-font",
       [
