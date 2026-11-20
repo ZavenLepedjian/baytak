@@ -34,7 +34,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.baytak.bms",
-      "versionCode": 23,
+      "versionCode": 24,
       "allowBackup": false
     },
     "web": {
